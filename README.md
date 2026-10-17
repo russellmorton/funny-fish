@@ -1,5 +1,9 @@
 # Funny Fish
 
+[![Tests](https://github.com/russellmorton/funny-fish/actions/workflows/test.yml/badge.svg)](https://github.com/russellmorton/funny-fish/actions/workflows/test.yml)
+
+**Play it: https://funny-fish.vercel.app**
+
 A fishing adventure for toddlers. A bear in a rain hat sits in a little red boat. Tap anywhere in the water and the hook drops there. The nearest fish always swims over and bites, so every tap catches something. The catch is reeled up and does something silly: a pufferfish puffs up, a starfish spins, a crab snaps its claws, an old boot gets stink lines. Its name is spoken and it goes in the bucket.
 
 Five catches fill the bucket. Then the boat sails on to the next place, each with its own creatures:
@@ -50,6 +54,6 @@ npm test           # both
 
 ## Deploying
 
-Vercel serves the repo root as a static site (`vercel.json`), and `.vercelignore` keeps tests and tooling out. GitHub Actions runs the tests on every push and pull request. Vercel Web Analytics (`src/analytics.js`) counts visits to the live site, without cookies.
+Pushes to `main` deploy to production through Vercel's GitHub integration; pull requests get preview deployments. Vercel serves the repo root as a static site (`vercel.json`), and `.vercelignore` keeps tests and tooling out. GitHub Actions runs the tests on every push and pull request. Vercel Web Analytics (`src/analytics.js`) counts visits to the live site, without cookies.
 
 All the sounds are synthesised in the browser, and the full-bucket jingle is an original tune written for the game.
