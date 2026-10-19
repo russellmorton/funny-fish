@@ -174,6 +174,36 @@ test.describe("at Halloween", () => {
     await expect(page.getByRole("heading", { name: "The spooky sea" })).toBeVisible();
   });
 
+  test("the Halloween switch on the title screen turns it on and off, and is remembered", async ({ page }) => {
+    await page.clock.setFixedTime(new Date(2026, 4, 12, 10, 0));   // May
+    await page.goto("/");
+    const toggle = page.getByRole("button", { name: "Halloween" });
+    await expect(toggle).toHaveAttribute("aria-pressed", "false");
+    await expect(page.locator(".title .tag")).toBeHidden();
+
+    await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator(".title .tag")).toBeVisible();
+    await expect.poll(() => state(page)).toBe("title");   // the switch isn't a tap to start
+    await page.reload();
+    await expect(page.getByRole("button", { name: "Halloween" })).toHaveAttribute("aria-pressed", "true");
+    await play(page);
+    await expect(page.locator("#caption")).toHaveText("Happy Halloween! Let's go fishing! Tap the water.");
+  });
+
+  test("switching Halloween off at the spooky sea takes the boat back to the pond", async ({ page }) => {
+    await at(page, PLACES.length);
+    await expect(page.locator("body")).toHaveAttribute("data-place", "spooky");
+    await page.goto("/");   // no address override, so the switch decides
+    await page.clock.setFixedTime(new Date(2026, 9, 20, 10, 0));
+    await page.reload();
+    await page.getByRole("button", { name: "Halloween" }).click();
+    await expect(page.locator("body")).toHaveAttribute("data-place", "pond");
+    await expect(page.locator("body")).not.toHaveAttribute("data-halloween");
+    await play(page);
+    await expect(page.locator("#caption")).toHaveText("Let's go fishing! Tap the water.");
+  });
+
   test("the fish book leaves out the spooky sea after October until something from it is caught", async ({ page }) => {
     await page.goto("/?halloween=0");
     await page.getByRole("button", { name: "Fish book" }).click();

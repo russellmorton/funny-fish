@@ -91,6 +91,16 @@ button:focus-visible { outline: 4px solid var(--ink); outline-offset: 3px; }
 /* Halloween (October): see isHalloween in src/sea.js */
 body[data-halloween] .title .tag { display: block; }
 body[data-halloween] .play { background: #ff8c1a; }
+.spooky-switch {
+  display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 4px 16px 4px 8px; margin-top: 1vh;
+  border: 3px solid var(--ink); border-radius: 999px; background: rgba(255,255,255,.9); font-weight: 800; font-size: 1.1rem;
+  box-shadow: 0 3px 0 rgba(29,43,79,.18);
+}
+.spooky-switch svg { width: 30px; height: 30px; }
+.spooky-switch .knob { width: 40px; height: 22px; border-radius: 999px; background: #c5cedb; border: 2px solid var(--ink); position: relative; box-sizing: border-box; transition: background .2s; }
+.spooky-switch .knob::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 2px solid var(--ink); box-sizing: border-box; transition: transform .2s; }
+.spooky-switch[aria-pressed="true"] .knob { background: #ff8c1a; }
+.spooky-switch[aria-pressed="true"] .knob::after { transform: translateX(18px); }
 
 /* the fish book */
 .book { position: fixed; inset: 0; z-index: 10; background: rgba(8,28,58,.6); display: grid; place-items: center; padding: 16px; box-sizing: border-box; }
@@ -158,6 +168,10 @@ body[data-halloween] .play { background: #ff8c1a; }
   <p class="tag">Happy Halloween!</p>
   <button class="play" id="play" aria-label="Play">
     <svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z" fill="#1d2b4f" stroke="#1d2b4f" stroke-width="2" stroke-linejoin="round"/></svg>
+  </button>
+  <button class="spooky-switch" id="spooky" type="button" aria-pressed="false">
+    <svg viewBox="0 0 32 32" aria-hidden="true" stroke="#1d2b4f" stroke-width="2" stroke-linejoin="round"><path d="M15 8l-1-5 4 0-1 5z" fill="#6d8f2e"/><ellipse cx="11" cy="18" rx="8" ry="10" fill="#ff8c1a"/><ellipse cx="21" cy="18" rx="8" ry="10" fill="#ff8c1a"/><ellipse cx="16" cy="18" rx="6" ry="10.5" fill="#ffa040"/><path d="M10 16h4l-2-3zM18 16h4l-2-3zM10 21q6 5 12 0q-6 2-12 0z" fill="#1d2b4f" stroke-width="1"/></svg>
+    Halloween <span class="knob" aria-hidden="true"></span>
   </button>
 </div>
 

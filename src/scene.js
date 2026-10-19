@@ -1,5 +1,5 @@
 // Canvas drawing for the places on the journey, the boat and its captain, and the fishing line.
-import { INK } from "./creatures.js";
+import { INK, witchHat } from "./creatures.js";
 
 const TAU = Math.PI * 2, PI = Math.PI;
 
@@ -341,17 +341,7 @@ export function drawBoat(c, B, t, honk = 0, spooky = false) {
   c.fillStyle = "rgba(255,105,135,.45)";
   for (const ex of [-20, 10]) { c.beginPath(); c.ellipse(ex, hy + 4, 4, 2.5, 0, 0, TAU); c.fill(); }
   if (spooky) {
-    // a witch's hat, with a floppy tip
-    const flop = Math.sin(t * 2.2) * 3;
-    c.beginPath(); c.ellipse(-8, hy - 17, 33, 7, 0, 0, TAU); paint(c, "#6a3fb5");
-    const cone = () => {
-      c.beginPath(); c.moveTo(-26, hy - 18); c.quadraticCurveTo(-16, hy - 40, -12, hy - 58);
-      c.quadraticCurveTo(-2, hy - 66, 10 + flop, hy - 58); c.quadraticCurveTo(-2, hy - 52, 10, hy - 18); c.closePath();
-    };
-    cone(); paint(c, "#6a3fb5");
-    c.save(); cone(); c.clip(); c.fillStyle = "#ff8c1a"; c.fillRect(-30, hy - 29, 44, 8); c.restore();
-    cone(); c.stroke();
-    c.fillStyle = "#ffd23f"; c.fillRect(-12, hy - 29, 8, 8); c.strokeRect(-12, hy - 29, 8, 8);
+    witchHat(c, -8, hy - 17, 1, Math.sin(t * 2.2) * 3);
   } else {
     c.beginPath(); c.ellipse(-8, hy - 16, 20, 15, 0, PI, TAU); c.closePath(); paint(c, "#ffd23f");
     c.beginPath(); c.ellipse(-8, hy - 16, 31, 7, 0, 0, TAU); paint(c, "#ffd23f");

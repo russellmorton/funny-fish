@@ -16,7 +16,7 @@ Five catches fill the bucket. Then the boat sails on to the next place, each wit
 
 After the night sea the boat sails back to the pond.
 
-**At Halloween** (all of October) the captain wears a witch's hat, bats flap across the sky, the moon turns orange and a jack-o'-lantern floats in every place. After the night sea the boat sails on to a sixth place, **the spooky sea**, with a pumpkin fish, a little ghost, a batfish and a trick-or-treat bucket full of sweets. Add `?halloween=1` to the address to see it on any day, or `?halloween=0` to switch it off. Creatures caught there stay in the fish book after October.
+**At Halloween** (all of October) every creature dresses up as a witch, a bat or a vampire, the captain wears a witch's hat, bats flap across the sky, the moon turns orange and a jack-o'-lantern floats in every place. After the night sea the boat sails on to a sixth place, **the spooky sea**, with a pumpkin fish, a little ghost, a batfish and a trick-or-treat bucket full of sweets. Grown-ups can turn it on or off on any day with the **Halloween** switch on the title screen, which is remembered. `?halloween=1` or `?halloween=0` in the address overrides both. Creatures caught there stay in the fish book after October.
 
 Made for little hands:
 

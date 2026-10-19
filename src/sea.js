@@ -52,11 +52,12 @@ export const SPOOKY = { id: "spooky", name: "the spooky sea", creatures: ["pumpk
 export const journey = halloween => halloween ? [...PLACES, SPOOKY] : PLACES;
 export const nextPlace = (i, route = PLACES) => (i + 1) % route.length;
 
-// Halloween dress-up is on for all of October. ?halloween=1 or ?halloween=0 in the address
-// switches it on or off on any day.
-export function isHalloween(date = new Date(), search = "") {
+// Halloween dress-up is on for all of October. The grown-ups' switch on the title screen (choice,
+// remembered) beats the date, and ?halloween=1 or ?halloween=0 in the address beats both.
+export function isHalloween(date = new Date(), search = "", choice = null) {
   const ask = new URLSearchParams(search).get("halloween");
   if (ask === "1" || ask === "0") return ask === "1";
+  if (typeof choice === "boolean") return choice;
   return date.getMonth() === 9;
 }
 

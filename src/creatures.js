@@ -8,14 +8,54 @@ const TAU = Math.PI * 2, PI = Math.PI;
 // o: dir (1 faces right, -1 left), t (seconds, for wiggles), wig (how much it wiggles),
 // tilt (radians), puff (pufferfish, 0..1), spin (starfish), glow (night sea), show (being shown off).
 export function drawCreature(c, kind, x, y, size, o = {}) {
-  const k = CREATURES[kind];
+  const k = CREATURES[kind], dress = dressedUp && COSTUMES[kind], t = o.t || 0, wig = o.wig ?? 1;
   c.save();
   c.translate(x, y);
   c.scale((o.dir || 1) * size / 50, size / 50);
   if (o.tilt) c.rotate(o.tilt);
   c.lineWidth = 4; c.lineJoin = "round"; c.lineCap = "round"; c.strokeStyle = INK;
-  SHAPES[k.shape](c, k, o.t || 0, o.wig ?? 1, o);
-  if (k.junk && o.show) stink(c, o.t || 0);
+  if (dress?.wings) for (const [x, y, s, l] of dress.wings) batWing(c, x, y, s, l, t, wig, "#5b3a8c");
+  SHAPES[k.shape](c, k, t, wig, o);
+  if (dress?.fangs) fangs(c, dress.fangs);
+  if (dress?.hat) { const [x, y, s] = dress.hat; witchHat(c, x, typeof y === "function" ? y(o) : y, s, Math.sin(t * 2.2) * 3); }
+  if (k.junk && o.show) stink(c, t);
+  c.restore();
+}
+
+// ---------- Halloween costumes ----------
+// In October everyone from the everyday places dresses up as a witch, a bat or a vampire. Each
+// costume sits where that creature's head, back or mouth is, in its 100-unit box facing right.
+let dressedUp = false;
+export function dressUp(on) { dressedUp = on; }
+const FISH_WINGS = [[2, -20, -1, .8], [-6, -20, 1, 1]], FISH_FANGS = [[26.5, 11.7], [32.5, 10.4]];
+export const COSTUMES = {
+  goldfish: { wings: FISH_WINGS }, catfish: { fangs: FISH_FANGS }, frog: { fangs: [[-6, 17.5], [6, 17.5]] }, duck: { hat: [18, -33, .75] },
+  coolfish: { fangs: FISH_FANGS }, puffer: { hat: [2, o => 4 - (28 + (o.puff || 0) * 16), .85] }, crab: { fangs: [[-4, 9.5], [4, 9.5]] },
+  boot: { wings: [[-10, -26, -1, .7], [-18, -20, 1, .9]] },
+  clownfish: { fangs: FISH_FANGS }, octopus: { fangs: [[-3.5, 10.5], [3.5, 10.5]] }, starfish: { hat: [0, -38, .7] }, turtle: { hat: [39, -19, .55] },
+  woolly: { fangs: FISH_FANGS }, narwhal: { wings: FISH_WINGS }, penguin: { hat: [2, -35, .8] }, sock: { wings: [[-6, -28, -1, .7], [-14, -22, 1, .9]] },
+  jelly: { hat: [0, -31, .85] }, angler: { wings: FISH_WINGS }, kingfish: { wings: FISH_WINGS }, sleepy: { wings: FISH_WINGS },
+};
+
+// A witch's hat with a floppy tip, its brim centred on (x, y). The captain wears one too.
+export function witchHat(c, x, y, s = 1, flop = 0) {
+  c.save(); c.translate(x, y); c.scale(s, s);
+  c.lineWidth = 4 / Math.max(s, .6); c.strokeStyle = INK; c.lineJoin = "round";
+  c.beginPath(); c.ellipse(0, 0, 33, 7, 0, 0, TAU); paint(c, "#6a3fb5");
+  const cone = () => {
+    c.beginPath(); c.moveTo(-18, -1); c.quadraticCurveTo(-8, -23, -4, -41);
+    c.quadraticCurveTo(6, -49, 18 + flop, -41); c.quadraticCurveTo(6, -35, 18, -1); c.closePath();
+  };
+  cone(); paint(c, "#6a3fb5");
+  c.save(); cone(); c.clip(); c.fillStyle = "#ff8c1a"; c.fillRect(-22, -12, 44, 8); c.restore();
+  cone(); c.stroke();
+  c.fillStyle = "#ffd23f"; c.fillRect(-4, -12, 8, 8); c.strokeRect(-4, -12, 8, 8);
+  c.restore();
+}
+
+function fangs(c, at) {
+  c.save(); c.fillStyle = "#fff"; c.lineWidth = 2;
+  for (const [x, y] of at) { c.beginPath(); c.moveTo(x - 2.6, y - 1); c.lineTo(x, y + 6); c.lineTo(x + 2.6, y - 1); c.closePath(); c.fill(); c.stroke(); }
   c.restore();
 }
 
@@ -67,7 +107,7 @@ function fish(c, k, t, wig, o) {
   c.save(); c.translate(-34, 0); c.rotate(wag);
   c.beginPath(); c.moveTo(6, 0); c.lineTo(-20, -22); c.quadraticCurveTo(-12, 0, -20, 22); c.closePath(); paint(c, k.fin);
   c.restore();
-  if (ex.includes("wings")) for (const [x, s, l] of [[2, -1, .8], [-6, 1, 1]]) batWing(c, x, -20, s, l, t, wig, k.fin);
+  if (ex.includes("wings")) for (const [x, y, s, l] of FISH_WINGS) batWing(c, x, y, s, l, t, wig, k.fin);
   c.beginPath(); c.moveTo(-18, -20); c.quadraticCurveTo(-8, -44, 14, -25); c.closePath(); paint(c, k.fin);
   fishBody(c); paint(c, k.body);
   if (k.stripes) {
@@ -189,11 +229,7 @@ const EXTRA = {
     c.restore();
   },
   wings() {},   // drawn behind the body, in fish()
-  fangs(c) {
-    c.fillStyle = "#fff"; c.lineWidth = 2;
-    for (const [x, y] of [[26.5, 11.7], [32.5, 10.4]]) { c.beginPath(); c.moveTo(x - 2.6, y - 1); c.lineTo(x, y + 6); c.lineTo(x + 2.6, y - 1); c.closePath(); c.fill(); c.stroke(); }
-    c.lineWidth = 4;
-  },
+  fangs(c) { fangs(c, FISH_FANGS); },
   horn(c) {
     c.beginPath(); c.moveTo(36, -10); c.lineTo(86, -24); c.lineTo(39, 0); c.closePath(); paint(c, "#fff4cf");
     c.lineWidth = 2.5;

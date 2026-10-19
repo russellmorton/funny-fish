@@ -2,7 +2,7 @@ import {
   CREATURES, PER_BUCKET, sea, boat, onBoat, spawn, swim, hit, nearest, lure, approach, refit,
   nextPlace, bookAdd, found, cleanBook, journey, isHalloween, SPOOKY,
 } from "./sea.js";
-import { drawCreature, creatureCanvas } from "./creatures.js";
+import { drawCreature, creatureCanvas, dressUp } from "./creatures.js";
 import { drawScene, drawBoat, drawLine } from "./scene.js";
 
 const $ = id => document.getElementById(id);
@@ -14,19 +14,28 @@ const ease = p => p < .5 ? 2 * p * p : 1 - (-2 * p + 2) ** 2 / 2;
 const pop = p => 1 + 2.7 * (p - 1) ** 3 + 1.7 * (p - 1) ** 2;   // overshoots a little, then settles
 const cap = s => s[0].toUpperCase() + s.slice(1);
 
-// In October the captain dresses up, bats come out, and the journey goes on to the spooky sea.
-const halloween = isHalloween(new Date(), location.search);
-const ROUTE = journey(halloween);
-if (halloween) document.body.dataset.halloween = "";
 
 // ---------- saved between visits: the fish book, where the boat is, sound on or off ----------
 const KEY = "funny-fish";
 let saved = {};
 try { saved = JSON.parse(localStorage.getItem(KEY)) || {}; } catch {}
 let book = cleanBook(saved.book);
-let place = Number.isInteger(saved.place) && saved.place >= 0 && saved.place < ROUTE.length ? saved.place : 0;
 let muted = saved.muted === true;
-function save() { try { localStorage.setItem(KEY, JSON.stringify({ book, place, muted })); } catch {} }
+let spookyChoice = typeof saved.halloween === "boolean" ? saved.halloween : null;   // the Halloween switch, once used
+
+// In October the captain dresses up, everyone wears a costume, bats come out, and the journey goes on
+// to the spooky sea. The switch on the title screen turns it on or off on any day.
+let halloween, ROUTE;
+function setHalloween(on) {
+  halloween = on; ROUTE = journey(on);
+  dressUp(on);
+  if (on) document.body.dataset.halloween = ""; else delete document.body.dataset.halloween;
+  $("spooky").setAttribute("aria-pressed", String(on));
+}
+setHalloween(isHalloween(new Date(), location.search, spookyChoice));
+
+let place = Number.isInteger(saved.place) && saved.place >= 0 && saved.place < ROUTE.length ? saved.place : 0;
+function save() { try { localStorage.setItem(KEY, JSON.stringify({ book, place, muted, halloween: spookyChoice ?? undefined })); } catch {} }
 
 // ---------- state ----------
 // title → fish → cast → wait (a fish swims to the worm) → reel → show → stow (into the bucket)
@@ -448,9 +457,26 @@ setState("title");
 renderBucket();
 
 // ---------- title, buttons and the fish book ----------
-const titleCols = halloween ? ["#ff8c1a", "#b77cff", "#9dff7a"] : ["#ff9a2e", "#ffd23f", "#4fc3ff", "#7ddc5a", "#ff6b9d"];
-$("title").innerHTML = [..."Funny Fish"].map((ch, i) =>
-  ch === " " ? " " : `<span aria-hidden="true" style="color:${titleCols[i % titleCols.length]};--i:${i}">${ch}</span>`).join("");
+function renderTitle() {
+  const cols = halloween ? ["#ff8c1a", "#b77cff", "#9dff7a"] : ["#ff9a2e", "#ffd23f", "#4fc3ff", "#7ddc5a", "#ff6b9d"];
+  $("title").innerHTML = [..."Funny Fish"].map((ch, i) =>
+    ch === " " ? " " : `<span aria-hidden="true" style="color:${cols[i % cols.length]};--i:${i}">${ch}</span>`).join("");
+}
+renderTitle();
+
+// The grown-ups' Halloween switch, on the title screen only, so it never changes mid-game.
+$("spooky").addEventListener("click", e => {
+  e.stopPropagation();   // not a tap to start
+  spookyChoice = !halloween;
+  setHalloween(spookyChoice);
+  if (place >= ROUTE.length) {   // the spooky sea is gone: back to the pond
+    place = 0;
+    document.body.dataset.place = here().id;
+    fish = []; stock(true);
+  }
+  save();
+  renderTitle();
+});
 
 let lock;
 async function wake() { try { lock = await navigator.wakeLock?.request("screen"); } catch {} }

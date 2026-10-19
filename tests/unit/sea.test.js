@@ -51,6 +51,14 @@ test("Halloween is all of October, and the address can switch it on or off", () 
   assert.equal(isHalloween(new Date(2026, 9, 20), "?halloween=maybe"), true);
 });
 
+test("the grown-ups' Halloween switch beats the date, and the address beats the switch", () => {
+  assert.equal(isHalloween(new Date(2026, 4, 1), "", true), true);
+  assert.equal(isHalloween(new Date(2026, 9, 20), "", false), false);
+  assert.equal(isHalloween(new Date(2026, 9, 20), "", null), true);
+  assert.equal(isHalloween(new Date(2026, 4, 1), "?halloween=0", true), false);
+  assert.equal(isHalloween(new Date(2026, 4, 1), "?halloween=1", false), true);
+});
+
 test("on any screen the water sits below the sky, fish fit in it, and the boat fits too", () => {
   for (const [W, H] of SCREENS) {
     const S = sea(W, H), B = boat(S);
