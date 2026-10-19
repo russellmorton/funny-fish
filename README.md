@@ -16,6 +16,8 @@ Five catches fill the bucket. Then the boat sails on to the next place, each wit
 
 After the night sea the boat sails back to the pond.
 
+**At Halloween** (all of October) the captain wears a witch's hat, bats flap across the sky, the moon turns orange and a jack-o'-lantern floats in every place. After the night sea the boat sails on to a sixth place, **the spooky sea**, with a pumpkin fish, a little ghost, a batfish and a trick-or-treat bucket full of sweets. Add `?halloween=1` to the address to see it on any day, or `?halloween=0` to switch it off. Creatures caught there stay in the fish book after October.
+
 Made for little hands:
 
 - There is no losing and no timer, and nothing to read. Tapping right on a fish catches that fish. Tapping anywhere else in the water still catches the nearest one.

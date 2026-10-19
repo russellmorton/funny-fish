@@ -1,6 +1,6 @@
 import {
-  CREATURES, PLACES, PER_BUCKET, sea, boat, onBoat, spawn, swim, hit, nearest, lure, approach, refit,
-  nextPlace, bookAdd, found, cleanBook,
+  CREATURES, PER_BUCKET, sea, boat, onBoat, spawn, swim, hit, nearest, lure, approach, refit,
+  nextPlace, bookAdd, found, cleanBook, journey, isHalloween, SPOOKY,
 } from "./sea.js";
 import { drawCreature, creatureCanvas } from "./creatures.js";
 import { drawScene, drawBoat, drawLine } from "./scene.js";
@@ -14,12 +14,17 @@ const ease = p => p < .5 ? 2 * p * p : 1 - (-2 * p + 2) ** 2 / 2;
 const pop = p => 1 + 2.7 * (p - 1) ** 3 + 1.7 * (p - 1) ** 2;   // overshoots a little, then settles
 const cap = s => s[0].toUpperCase() + s.slice(1);
 
+// In October the captain dresses up, bats come out, and the journey goes on to the spooky sea.
+const halloween = isHalloween(new Date(), location.search);
+const ROUTE = journey(halloween);
+if (halloween) document.body.dataset.halloween = "";
+
 // ---------- saved between visits: the fish book, where the boat is, sound on or off ----------
 const KEY = "funny-fish";
 let saved = {};
 try { saved = JSON.parse(localStorage.getItem(KEY)) || {}; } catch {}
 let book = cleanBook(saved.book);
-let place = Number.isInteger(saved.place) && saved.place >= 0 && saved.place < PLACES.length ? saved.place : 0;
+let place = Number.isInteger(saved.place) && saved.place >= 0 && saved.place < ROUTE.length ? saved.place : 0;
 let muted = saved.muted === true;
 function save() { try { localStorage.setItem(KEY, JSON.stringify({ book, place, muted })); } catch {} }
 
@@ -34,7 +39,7 @@ let sail = null;        // { from, to }
 let lastTap = 0, nudgedAt = -99, honk = 0, nextBubble = 1;
 
 function setState(s) { state = s; stateAt = T; document.body.dataset.state = s; }
-document.body.dataset.place = PLACES[place].id;
+document.body.dataset.place = ROUTE[place].id;
 
 // ---------- sound + voice ----------
 let ac, noiseBuf;
@@ -95,6 +100,10 @@ const sfx = {
   wobble: () => [330, 392, 330, 392, 330].forEach((f, i) => tone(f, i * .1, .14, "sine", .15, f * 1.08)),
   ding: () => { tone(1568, 0, 1.2, "sine", .16); tone(3136, 0, .6, "sine", .04); },
   snore: () => { hiss(.7, 350, "lowpass", .25); tone(90, 0, .7, "sawtooth", .03, 70); tone(600, .8, .3, "sine", .08, 1200); },
+  woo: () => { tone(330, 0, .5, "sine", .14, 520); tone(520, .45, .8, "sine", .14, 300); tone(660, .45, .8, "triangle", .03, 380); },
+  boo: () => { tone(260, 0, .18, "triangle", .12, 330); tone(330, .2, .9, "sine", .16, 200); },
+  flap: () => { for (let i = 0; i < 6; i++) hiss(.06, 1600, "bandpass", .18, i * .09); tone(2400, .55, .08, "sine", .06, 3000); },
+  treat: () => { hiss(.3, 5000, "highpass", .08); [784, 988, 1175, 1568].forEach((f, i) => tone(f, .1 + i * .08, .25, "triangle", .1)); },
 };
 // An original little sea-shanty jingle for a full bucket.
 function jingle() {
@@ -133,8 +142,8 @@ new ResizeObserver(resize).observe(cv);
 resize();
 
 const want = () => clamp(Math.round(S.W * S.H / 150000), 4, 7);
-const here = () => PLACES[place];
-const night = () => here().id === "night";
+const here = () => ROUTE[place];
+const night = () => here().id === "night" || here().id === "spooky";
 function stock(inside) {
   while (fish.filter(f => f.state === "swim").length < want()) fish.push(spawn(S, here(), Math.random, fish.map(f => f.kind), inside));
 }
@@ -150,7 +159,7 @@ function splash(x, y) {
   parts.push({ k: "ring", x, y, r: 6, life: .7 });
 }
 function sparkle(x, y, n, spread = 1) {
-  const cols = ["#ffd23f", "#ff6b9d", "#7ddc5a", "#4fc3ff", "#ffffff"];
+  const cols = halloween ? ["#ff8c1a", "#b77cff", "#9dff7a", "#ffd23f", "#ffffff"] : ["#ffd23f", "#ff6b9d", "#7ddc5a", "#4fc3ff", "#ffffff"];
   for (let i = 0; i < n; i++) {
     const a = Math.random() * TAU, v = (120 + Math.random() * 220) * spread;
     parts.push({ k: "star", x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 60, r: 5 + Math.random() * 6, rot: Math.random() * TAU, col: cols[i % cols.length], life: 1.2 });
@@ -298,11 +307,11 @@ function full() {
   $("bucket").classList.add("party");
   jingle();
   for (let i = 0; i < 4; i++) setTimeout(() => sparkle(S.W * (.2 + Math.random() * .6), S.H * (.3 + Math.random() * .3), 18), i * 350);
-  say(`Your bucket is full! Let's sail to ${PLACES[nextPlace(place)].name}!`);
+  say(`Your bucket is full! Let's sail to ${ROUTE[nextPlace(place, ROUTE)].name}!`);
 }
 const sailTime = () => reduce ? 1 : 3.6;
 function setSail() {
-  sail = { from: place, to: nextPlace(place) };
+  sail = { from: place, to: nextPlace(place, ROUTE) };
   setState("sail");
   sfx.toot(); sfx.whoosh();
   honk = 1;
@@ -352,9 +361,9 @@ function draw() {
   if (state === "sail") {
     const e = ease(Math.min(1, (T - stateAt) / sailTime()));
     off = -e * S.W;
-    drawScene(c, S, PLACES[sail.from].id, T, off);
-    drawScene(c, S, PLACES[sail.to].id, T, off + S.W);
-  } else drawScene(c, S, here().id, T);
+    drawScene(c, S, ROUTE[sail.from].id, T, off, halloween);
+    drawScene(c, S, ROUTE[sail.to].id, T, off + S.W, halloween);
+  } else drawScene(c, S, here().id, T, 0, halloween);
 
   const glow = night();
   for (const f of fish) {
@@ -363,7 +372,7 @@ function draw() {
   }
   if (state === "fish" && T - lastTap > 7) nudge();
 
-  tip = drawBoat(c, B, T, honk);
+  tip = drawBoat(c, B, T, honk, halloween);
   if (hook) {
     drawLine(c, S, tip, hook, T, !hook.fish || hook.fish.state !== "hooked");
     if (hook.fish?.state === "hooked") {
@@ -439,7 +448,7 @@ setState("title");
 renderBucket();
 
 // ---------- title, buttons and the fish book ----------
-const titleCols = ["#ff9a2e", "#ffd23f", "#4fc3ff", "#7ddc5a", "#ff6b9d"];
+const titleCols = halloween ? ["#ff8c1a", "#b77cff", "#9dff7a"] : ["#ff9a2e", "#ffd23f", "#4fc3ff", "#7ddc5a", "#ff6b9d"];
 $("title").innerHTML = [..."Funny Fish"].map((ch, i) =>
   ch === " " ? " " : `<span aria-hidden="true" style="color:${titleCols[i % titleCols.length]};--i:${i}">${ch}</span>`).join("");
 
@@ -455,7 +464,8 @@ function start() {
   lastTap = T;
   wake();
   cv.focus({ preventScroll: true });
-  say(place === 0 && !found(book) ? "Let's go fishing! Tap the water." : `Let's go fishing at ${here().name}!`);
+  const hello = place === 0 && !found(book) ? "Let's go fishing! Tap the water." : `Let's go fishing at ${here().name}!`;
+  say(halloween ? `Happy Halloween! ${hello}` : hello);
 }
 $("title-screen").addEventListener("click", start);
 
@@ -480,7 +490,10 @@ if (document.fullscreenEnabled) {
 function openBook() {
   const grid = $("book-pages");
   grid.replaceChildren();
-  for (const p of PLACES) {
+  // the spooky sea's page stays in the book after October, once something from it has been caught
+  const pages = halloween || !SPOOKY.creatures.some(k => book[k]) ? ROUTE : [...ROUTE, SPOOKY];
+  const kinds = pages.flatMap(p => p.creatures);
+  for (const p of pages) {
     const h = document.createElement("h3");
     h.textContent = cap(p.name);
     const row = document.createElement("div");
@@ -505,7 +518,7 @@ function openBook() {
     }
     grid.append(h, row);
   }
-  $("book-count").textContent = `${found(book)} of ${Object.keys(CREATURES).length} found`;
+  $("book-count").textContent = `${kinds.filter(k => book[k]).length} of ${kinds.length} found`;
   $("book").hidden = false;
   $("book-close").focus();
 }

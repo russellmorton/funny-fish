@@ -67,12 +67,19 @@ function fish(c, k, t, wig, o) {
   c.save(); c.translate(-34, 0); c.rotate(wag);
   c.beginPath(); c.moveTo(6, 0); c.lineTo(-20, -22); c.quadraticCurveTo(-12, 0, -20, 22); c.closePath(); paint(c, k.fin);
   c.restore();
+  if (ex.includes("wings")) for (const [x, s, l] of [[2, -1, .8], [-6, 1, 1]]) batWing(c, x, -20, s, l, t, wig, k.fin);
   c.beginPath(); c.moveTo(-18, -20); c.quadraticCurveTo(-8, -44, 14, -25); c.closePath(); paint(c, k.fin);
   fishBody(c); paint(c, k.body);
   if (k.stripes) {
     c.save(); fishBody(c); c.clip();
     for (const x of [-16, 8]) { oval(c, x, 0, 6, 32); paint(c, "#fff"); }
     c.restore(); fishBody(c); c.stroke();
+  }
+  if (k.ribs) {
+    c.save(); fishBody(c); c.clip();
+    c.strokeStyle = k.ribs; c.lineWidth = 3;
+    for (const [x, rx] of [[-24, 10], [-6, 7], [12, 10]]) { c.beginPath(); c.ellipse(x, 0, rx, 30, 0, -PI / 2, PI / 2, x > 0); c.stroke(); }
+    c.restore();
   }
   if (k.spots) {
     c.fillStyle = k.spots;
@@ -90,6 +97,15 @@ function fish(c, k, t, wig, o) {
   else if (!ex.includes("moustache") && !ex.includes("sleep")) smile(c, 28, 4, 8, .1, .7);
   cheek(c, 12, 10, 6);
   for (const e of ex) EXTRA[e](c, k, t, o);
+}
+
+// A bat's wing, hinged at (x, y) on the fish's back. s = 1 sweeps it back, -1 forward.
+function batWing(c, x, y, s, l, t, wig, fill) {
+  c.save(); c.translate(x, y); c.scale(s * l, l); c.rotate(Math.sin(t * 10) * .35 * wig - .1);
+  c.beginPath(); c.moveTo(0, 0); c.lineTo(-8, -30); c.lineTo(-38, -40);
+  c.quadraticCurveTo(-30, -30, -28, -16); c.quadraticCurveTo(-22, -24, -15, -12); c.quadraticCurveTo(-9, -18, 2, -2); c.closePath();
+  c.lineWidth = 4 / l; paint(c, fill);
+  c.restore();
 }
 
 function teeth(c) {
@@ -164,6 +180,19 @@ const EXTRA = {
     c.fillStyle = "#ffe066";
     for (const [x, y] of [[-2, -34], [-18, -42], [10, -27]]) { circle(c, x, y, 2.5); c.fill(); }
     circle(c, -40, -46, 6); paint(c, "#fff");
+  },
+  stem(c) {
+    c.beginPath(); c.moveTo(4, -26); c.quadraticCurveTo(2, -36, -2, -42); c.lineTo(6, -44); c.quadraticCurveTo(10, -36, 12, -27); c.closePath(); paint(c, "#6d8f2e");
+    c.beginPath(); c.ellipse(20, -38, 9, 4.5, -.4, 0, TAU); paint(c, "#7ddc5a");
+    c.save(); c.strokeStyle = "#5aa83c"; c.lineWidth = 2.5;
+    c.beginPath(); c.moveTo(8, -40); c.bezierCurveTo(-2, -52, -12, -40, -4, -36); c.stroke();
+    c.restore();
+  },
+  wings() {},   // drawn behind the body, in fish()
+  fangs(c) {
+    c.fillStyle = "#fff"; c.lineWidth = 2;
+    for (const [x, y] of [[26.5, 11.7], [32.5, 10.4]]) { c.beginPath(); c.moveTo(x - 2.6, y - 1); c.lineTo(x, y + 6); c.lineTo(x + 2.6, y - 1); c.closePath(); c.fill(); c.stroke(); }
+    c.lineWidth = 4;
   },
   horn(c) {
     c.beginPath(); c.moveTo(36, -10); c.lineTo(86, -24); c.lineTo(39, 0); c.closePath(); paint(c, "#fff4cf");
@@ -345,7 +374,53 @@ function jelly(c, k, t, wig, o) {
   c.restore();
 }
 
-const SHAPES = { fish, puffer, crab, octopus, star, turtle, frog, duck, boot, sock, penguin, jelly };
+// A friendly sheet ghost with a wavy hem.
+function ghost(c, k, t, wig, o) {
+  const shape = () => {
+    c.beginPath(); c.moveTo(-30, 28); c.lineTo(-30, -6); c.bezierCurveTo(-30, -50, 30, -50, 30, -6); c.lineTo(30, 28);
+    for (let i = 0; i < 4; i++) { const x = 30 - (i + 1) * 15, dip = (i % 2 ? 6 : 10) + Math.sin(t * 5 + i) * 3 * wig; c.quadraticCurveTo(x + 7.5, 28 + dip, x, 28); }
+    c.closePath();
+  };
+  c.save(); c.rotate(Math.sin(t * 2.5) * .08 * wig);
+  for (const s of [-1, 1]) { oval(c, s * 31, 6, 9, 6, s * .5); paint(c, k.body); }
+  shape();
+  c.save();
+  if (o.glow) { c.shadowColor = "#d9ccff"; c.shadowBlur = 30; }
+  c.globalAlpha = .95; c.fillStyle = k.body; c.fill();
+  c.restore();
+  c.stroke();
+  oval(c, -14, -26, 7, 4, -.6); c.fillStyle = "#fff"; c.fill();
+  eye(c, 2, -12, 9, t); eye(c, 20, -12, 9, t);
+  oval(c, 12, 6, 4.5, 6); paint(c, INK);
+  cheek(c, -6, 2, 5); cheek(c, 28, 2, 4);
+  c.restore();
+}
+
+// A pumpkin trick-or-treat bucket, sweets poking out of the top.
+function pail(c, k) {
+  c.beginPath(); c.moveTo(-26, -24); c.bezierCurveTo(-26, -62, 26, -62, 26, -24); c.lineWidth = 5; c.stroke(); c.lineWidth = 4;
+  for (const [x, y, col] of [[-14, -30, "#ff5fa2"], [0, -34, "#7ddc5a"], [13, -30, "#4fc3ff"]]) {
+    c.save(); c.translate(x, y); c.rotate(x * .04);
+    for (const s of [-1, 1]) { c.beginPath(); c.moveTo(s * 6, 0); c.lineTo(s * 12, -5); c.lineTo(s * 12, 5); c.closePath(); paint(c, col); }
+    oval(c, 0, 0, 8, 6); paint(c, col);
+    c.restore();
+  }
+  const body = () => { c.beginPath(); c.moveTo(-32, -24); c.lineTo(32, -24); c.bezierCurveTo(40, 4, 34, 34, 0, 34); c.bezierCurveTo(-34, 34, -40, 4, -32, -24); c.closePath(); };
+  body(); paint(c, k.body);
+  c.save(); body(); c.clip();
+  c.strokeStyle = "#e0650b"; c.lineWidth = 3;
+  for (const x of [-18, 18]) { c.beginPath(); c.ellipse(x, 6, 12, 32, 0, 0, TAU); c.stroke(); }
+  c.restore();
+  box(c, -35, -29, 70, 9, 4); paint(c, "#e0650b");
+  c.fillStyle = INK;
+  for (const s of [-1, 1]) { c.beginPath(); c.moveTo(s * 6, -2); c.lineTo(s * 22, -2); c.lineTo(s * 14, -14); c.closePath(); c.fill(); }
+  c.beginPath(); c.moveTo(-20, 10); c.quadraticCurveTo(0, 30, 20, 10); c.quadraticCurveTo(0, 18, -20, 10); c.fill();
+  c.fillStyle = "#fff6b0";
+  for (const s of [-1, 1]) { circle(c, s * 15 - 2, -5, 1.8); c.fill(); }
+  cheek(c, -24, 8, 5); cheek(c, 24, 8, 5);
+}
+
+const SHAPES = { fish, puffer, crab, octopus, star, turtle, frog, duck, boot, sock, penguin, jelly, ghost, pail };
 
 // Paints a creature into a small <canvas>: for the bucket and the fish book. Not caught yet
 // shows as a silhouette.

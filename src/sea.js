@@ -32,6 +32,11 @@ export const CREATURES = {
   angler:    { name: "anglerfish", say: "An anglerfish with a little lamp!", shape: "fish", body: "#6a58a0", fin: "#4b3c7a", extras: ["lamp"], sound: "ding", glows: true },
   kingfish:  { name: "king fish", say: "A king fish with a crown and a moustache!", shape: "fish", body: "#6c8cff", fin: "#4b63d6", extras: ["crown", "moustache"], sound: "tada" },
   sleepy:    { name: "sleepy fish", say: "A sleepy fish in a nightcap! Snore!", shape: "fish", body: "#7fd6c2", fin: "#4fb39e", extras: ["sleep"], sound: "snore", slow: true },
+
+  pumpkin:   { name: "pumpkin fish", say: "A pumpkin fish! Happy Halloween!", shape: "fish", body: "#ff8c1a", fin: "#e0650b", ribs: "#d9620a", extras: ["stem"], sound: "woo" },
+  ghost:     { name: "ghost", say: "A little ghost! Boo!", shape: "ghost", body: "#f6f3ff", sound: "boo", swim: "drift", slow: true, glows: true },
+  batfish:   { name: "batfish", say: "A batfish! Flap flap!", shape: "fish", body: "#8a6cc9", fin: "#5e4398", extras: ["wings", "fangs"], sound: "flap" },
+  candy:     { name: "candy bucket", say: "A trick-or-treat bucket full of sweets!", shape: "pail", body: "#ff9a2e", sound: "treat", swim: "bottom", slow: true, scale: .9 },
 };
 
 // The journey, in order. After the last place the boat sails back to the first.
@@ -42,7 +47,18 @@ export const PLACES = [
   { id: "ice", name: "the icy sea", creatures: ["woolly", "narwhal", "penguin", "sock"] },
   { id: "night", name: "the night sea", creatures: ["jelly", "angler", "kingfish", "sleepy"] },
 ];
-export const nextPlace = i => (i + 1) % PLACES.length;
+// Only in October (or with ?halloween=1), the boat sails on from the night sea to the spooky sea.
+export const SPOOKY = { id: "spooky", name: "the spooky sea", creatures: ["pumpkin", "ghost", "batfish", "candy"] };
+export const journey = halloween => halloween ? [...PLACES, SPOOKY] : PLACES;
+export const nextPlace = (i, route = PLACES) => (i + 1) % route.length;
+
+// Halloween dress-up is on for all of October. ?halloween=1 or ?halloween=0 in the address
+// switches it on or off on any day.
+export function isHalloween(date = new Date(), search = "") {
+  const ask = new URLSearchParams(search).get("halloween");
+  if (ask === "1" || ask === "0") return ask === "1";
+  return date.getMonth() === 9;
+}
 
 // The screen as the sea sees it: the waterline, how big a fish is, and the band fish swim in.
 export function sea(W, H) {

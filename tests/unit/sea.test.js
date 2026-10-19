@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   CREATURES, PLACES, PER_BUCKET, nextPlace, sea, sizeOf, boat, onBoat, pickKind, spawn, swim, hit, nearest,
-  lure, approach, refit, bookAdd, found, cleanBook,
+  lure, approach, refit, bookAdd, found, cleanBook, SPOOKY, journey, isHalloween,
 } from "../../src/sea.js";
 
 // a repeatable stand-in for Math.random
@@ -11,7 +11,7 @@ const SCREENS = [[1280, 720], [412, 839], [915, 412], [768, 1024], [1920, 1080],
 
 test("every place has its own creatures, and every creature lives somewhere", () => {
   const seen = new Set();
-  for (const p of PLACES) {
+  for (const p of journey(true)) {
     assert.ok(p.creatures.length >= 3, p.id);
     for (const k of p.creatures) { assert.ok(k in CREATURES, k); assert.ok(!seen.has(k), `${k} is in two places`); seen.add(k); }
     assert.ok(p.creatures.some(k => !CREATURES[k].junk), `${p.id} has real fish`);
@@ -19,7 +19,7 @@ test("every place has its own creatures, and every creature lives somewhere", ()
   assert.deepEqual([...seen].sort(), Object.keys(CREATURES).sort());
   for (const [k, c] of Object.entries(CREATURES)) {
     assert.ok(c.name && c.say, k);
-    assert.ok(["fish", "puffer", "crab", "octopus", "star", "turtle", "frog", "duck", "boot", "sock", "penguin", "jelly"].includes(c.shape), k);
+    assert.ok(["fish", "puffer", "crab", "octopus", "star", "turtle", "frog", "duck", "boot", "sock", "penguin", "jelly", "ghost", "pail"].includes(c.shape), k);
     if (c.shape === "fish") assert.ok(c.body && c.fin, k);
   }
 });
@@ -31,6 +31,24 @@ test("the journey visits every place and comes back round", () => {
   assert.equal(i, 0);
   assert.deepEqual(new Set(visited).size, PLACES.length);
   assert.equal(PER_BUCKET, 5);
+});
+
+test("at Halloween the journey goes on from the night sea to the spooky sea and back to the pond", () => {
+  const route = journey(true);
+  assert.deepEqual(route.map(p => p.id), [...PLACES.map(p => p.id), "spooky"]);
+  assert.equal(route[nextPlace(PLACES.length - 1, route)], SPOOKY);
+  assert.equal(nextPlace(route.length - 1, route), 0);
+  assert.equal(journey(false), PLACES);
+});
+
+test("Halloween is all of October, and the address can switch it on or off", () => {
+  assert.equal(isHalloween(new Date(2026, 9, 1)), true);
+  assert.equal(isHalloween(new Date(2026, 9, 31, 23, 59)), true);
+  assert.equal(isHalloween(new Date(2026, 8, 30)), false);
+  assert.equal(isHalloween(new Date(2026, 10, 1)), false);
+  assert.equal(isHalloween(new Date(2026, 3, 2), "?halloween=1"), true);
+  assert.equal(isHalloween(new Date(2026, 9, 20), "?halloween=0"), false);
+  assert.equal(isHalloween(new Date(2026, 9, 20), "?halloween=maybe"), true);
 });
 
 test("on any screen the water sits below the sky, fish fit in it, and the boat fits too", () => {
@@ -49,7 +67,7 @@ test("new fish swim in from the edge facing the screen, or start somewhere in th
   const r = rng(7);
   for (const [W, H] of SCREENS) {
     const S = sea(W, H);
-    for (const place of PLACES) for (let i = 0; i < 40; i++) {
+    for (const place of journey(true)) for (let i = 0; i < 40; i++) {
       const f = spawn(S, place, r);
       assert.ok(place.creatures.includes(f.kind));
       assert.ok(f.dir > 0 ? f.x < 0 : f.x > W, "starts off screen");

@@ -1,11 +1,13 @@
 import { test, expect } from "@playwright/test";
-import { sea, boat, PLACES, CREATURES } from "../../src/sea.js";
+import { sea, boat, PLACES, CREATURES, SPOOKY } from "../../src/sea.js";
 
+// The everyday game. Halloween (all of October) is switched off here so the tests don't depend
+// on the date, and has its own tests at the end.
 let errors;
 test.beforeEach(async ({ page }) => {
   errors = [];
   page.on("pageerror", e => errors.push(e.message));
-  await page.goto("/");
+  await page.goto("/?halloween=0");
 });
 test.afterEach(() => expect(errors).toEqual([]));
 
@@ -98,10 +100,10 @@ test("the fish book shows what you've caught and hides the rest", async ({ page 
   await page.getByRole("button", { name: "Fish book" }).click();
   const dialog = page.getByRole("dialog", { name: "Fish book" });
   await expect(dialog).toBeVisible();
-  await expect(dialog.locator(".sticker")).toHaveCount(Object.keys(CREATURES).length);
+  await expect(dialog.locator(".sticker")).toHaveCount(PLACES.length * 4);
   await expect(dialog.locator(".sticker:not(.no)")).toHaveCount(1);
   await expect(dialog.locator(`.sticker[data-kind="${kind}"]`)).toHaveAttribute("aria-label", new RegExp(`${CREATURES[kind].name}, caught 1`, "i"));
-  await expect(dialog.getByText(`1 of ${Object.keys(CREATURES).length} found`)).toBeVisible();
+  await expect(dialog.getByText(`1 of ${PLACES.length * 4} found`)).toBeVisible();
   await dialog.locator(`.sticker[data-kind="${kind}"]`).click();
   await expect(page.locator("#caption")).toHaveText(CREATURES[kind].say);
   await page.keyboard.press("Escape");
@@ -133,4 +135,49 @@ test("nothing spills off the side of the screen", async ({ page }) => {
   expect(right.x + right.width).toBeLessThanOrEqual(hud.width);
   const bucket = await page.locator(".bucket").boundingBox();
   expect(bucket.x + bucket.width).toBeLessThan(right.x);
+});
+
+test.describe("at Halloween", () => {
+  // Starts the game at a given stop on the journey, as if the boat had sailed there before.
+  async function at(page, place, halloween = 1) {
+    await page.evaluate(place => {
+      const saved = JSON.parse(localStorage.getItem("funny-fish")) || {};
+      localStorage.setItem("funny-fish", JSON.stringify({ ...saved, place }));
+    }, place);
+    await page.goto(`/?halloween=${halloween}`);
+  }
+
+  test("the title says Happy Halloween, and so does the game", async ({ page }) => {
+    await page.goto("/?halloween=1");
+    await expect(page.locator(".title .tag")).toHaveText("Happy Halloween!");
+    await expect(page.locator(".title .tag")).toBeVisible();
+    await play(page);
+    await expect(page.locator("#caption")).toHaveText("Happy Halloween! Let's go fishing! Tap the water.");
+  });
+
+  test("the night sea sails on to the spooky sea, where the Halloween creatures live", async ({ page }) => {
+    test.setTimeout(120_000);
+    await at(page, PLACES.length - 1);
+    await play(page);
+    for (let i = 0; i < 5; i++) await catchOne(page, .2 + i * .15, .3 + (i % 3) * .25);
+    await expect(page.locator("#caption")).toHaveText("Your bucket is full! Let's sail to the spooky sea!");
+    await expect.poll(() => state(page), { timeout: 14000 }).toBe("fish");
+    await expect(page.locator("body")).toHaveAttribute("data-place", "spooky");
+    await catchOne(page);
+    expect(SPOOKY.creatures).toContain(await caught(page).first().getAttribute("data-kind"));
+
+    // after October the boat is back at the pond, and the spooky page stays in the fish book
+    await at(page, PLACES.length, 0);
+    await expect(page.locator("body")).toHaveAttribute("data-place", "pond");
+    await expect(page.locator(".title .tag")).toBeHidden();
+    await page.getByRole("button", { name: "Fish book" }).click();
+    await expect(page.getByRole("heading", { name: "The spooky sea" })).toBeVisible();
+  });
+
+  test("the fish book leaves out the spooky sea after October until something from it is caught", async ({ page }) => {
+    await page.goto("/?halloween=0");
+    await page.getByRole("button", { name: "Fish book" }).click();
+    await expect(page.locator(".sticker")).toHaveCount(PLACES.length * 4);
+    await expect(page.getByRole("heading", { name: "The spooky sea" })).toHaveCount(0);
+  });
 });
