@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { sea, boat, PLACES, CREATURES, SPOOKY, MERRY } from "../../src/sea.js";
 
-// The everyday game. Halloween (all of October) and Christmas (December) are switched off here so
+// The everyday game. Halloween (all of October) and Christmas (12 November to 6 January) are switched off here so
 // the tests don't depend on the date, and have their own tests at the end.
 let errors;
 test.beforeEach(async ({ page }) => {

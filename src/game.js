@@ -25,7 +25,7 @@ let spookyChoice = typeof saved.halloween === "boolean" ? saved.halloween : null
 let merryChoice = typeof saved.christmas === "boolean" ? saved.christmas : null;    // the Christmas switch, once used
 
 // In October the captain dresses up, everyone wears a costume, bats come out, and the journey goes on
-// to the spooky sea. From December to Twelfth Night it's Santa hats, snow, presents and the Christmas
+// to the spooky sea. From 12 November to Twelfth Night it's Santa hats, snow, presents and the Christmas
 // sea. The switches on the title screen turn either on or off on any day (never both at once).
 let halloween, christmas, ROUTE;
 function setSeasons() {

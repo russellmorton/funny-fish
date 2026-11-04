@@ -48,9 +48,9 @@ test("at Christmas the journey goes on from the night sea to the Christmas sea i
   assert.equal(nextPlace(route.length - 1, route), 0);
 });
 
-test("Christmas is 1 December to 6 January; the switch beats the date and the address beats both", () => {
-  for (const d of [new Date(2026, 11, 1), new Date(2026, 11, 25), new Date(2027, 0, 6, 23, 59)]) assert.equal(isChristmas(d), true, d);
-  for (const d of [new Date(2026, 10, 30), new Date(2027, 0, 7), new Date(2026, 9, 31)]) assert.equal(isChristmas(d), false, d);
+test("Christmas is 12 November to 6 January; the switch beats the date and the address beats both", () => {
+  for (const d of [new Date(2026, 10, 12), new Date(2026, 11, 1), new Date(2026, 11, 25), new Date(2027, 0, 6, 23, 59)]) assert.equal(isChristmas(d), true, d);
+  for (const d of [new Date(2026, 10, 11, 23, 59), new Date(2027, 0, 7), new Date(2026, 9, 31)]) assert.equal(isChristmas(d), false, d);
   assert.equal(isChristmas(new Date(2026, 4, 1), "", true), true);
   assert.equal(isChristmas(new Date(2026, 11, 20), "", false), false);
   assert.equal(isChristmas(new Date(2026, 4, 1), "?christmas=1", false), true);

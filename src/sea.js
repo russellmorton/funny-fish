@@ -69,13 +69,13 @@ export function isHalloween(date = new Date(), search = "", choice = null) {
   return date.getMonth() === 9;
 }
 
-// Christmas dress-up is on from 1 December to 6 January, with its own switch (choice) and
+// Christmas dress-up is on from 12 November to 6 January, with its own switch (choice) and
 // ?christmas=1 or ?christmas=0, in the same order.
 export function isChristmas(date = new Date(), search = "", choice = null) {
   const ask = new URLSearchParams(search).get("christmas");
   if (ask === "1" || ask === "0") return ask === "1";
   if (typeof choice === "boolean") return choice;
-  return date.getMonth() === 11 || (date.getMonth() === 0 && date.getDate() <= 6);
+  return (date.getMonth() === 10 && date.getDate() >= 12) || date.getMonth() === 11 || (date.getMonth() === 0 && date.getDate() <= 6);
 }
 
 // Halloween and Christmas are never on together. One that was asked for (in the address, or with
