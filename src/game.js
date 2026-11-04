@@ -1,6 +1,6 @@
 import {
   CREATURES, PER_BUCKET, sea, boat, onBoat, spawn, swim, hit, nearest, lure, approach, refit,
-  nextPlace, bookAdd, found, cleanBook, journey, isHalloween, SPOOKY,
+  nextPlace, bookAdd, found, cleanBook, journey, seasons, SPOOKY, MERRY,
 } from "./sea.js";
 import { drawCreature, creatureCanvas, dressUp } from "./creatures.js";
 import { drawScene, drawBoat, drawLine } from "./scene.js";
@@ -22,20 +22,25 @@ try { saved = JSON.parse(localStorage.getItem(KEY)) || {}; } catch {}
 let book = cleanBook(saved.book);
 let muted = saved.muted === true;
 let spookyChoice = typeof saved.halloween === "boolean" ? saved.halloween : null;   // the Halloween switch, once used
+let merryChoice = typeof saved.christmas === "boolean" ? saved.christmas : null;    // the Christmas switch, once used
 
 // In October the captain dresses up, everyone wears a costume, bats come out, and the journey goes on
-// to the spooky sea. The switch on the title screen turns it on or off on any day.
-let halloween, ROUTE;
-function setHalloween(on) {
-  halloween = on; ROUTE = journey(on);
-  dressUp(on);
-  if (on) document.body.dataset.halloween = ""; else delete document.body.dataset.halloween;
-  $("spooky").setAttribute("aria-pressed", String(on));
+// to the spooky sea. From December to Twelfth Night it's Santa hats, snow, presents and the Christmas
+// sea. The switches on the title screen turn either on or off on any day (never both at once).
+let halloween, christmas, ROUTE;
+function setSeasons() {
+  ({ halloween, christmas } = seasons(new Date(), location.search, { halloween: spookyChoice, christmas: merryChoice }));
+  ROUTE = journey(halloween, christmas);
+  dressUp(halloween ? "halloween" : christmas ? "christmas" : null);
+  if (halloween) document.body.dataset.halloween = ""; else delete document.body.dataset.halloween;
+  if (christmas) document.body.dataset.christmas = ""; else delete document.body.dataset.christmas;
+  $("spooky").setAttribute("aria-pressed", String(halloween));
+  $("merry").setAttribute("aria-pressed", String(christmas));
 }
-setHalloween(isHalloween(new Date(), location.search, spookyChoice));
+setSeasons();
 
 let place = Number.isInteger(saved.place) && saved.place >= 0 && saved.place < ROUTE.length ? saved.place : 0;
-function save() { try { localStorage.setItem(KEY, JSON.stringify({ book, place, muted, halloween: spookyChoice ?? undefined })); } catch {} }
+function save() { try { localStorage.setItem(KEY, JSON.stringify({ book, place, muted, halloween: spookyChoice ?? undefined, christmas: merryChoice ?? undefined })); } catch {} }
 
 // ---------- state ----------
 // title → fish → cast → wait (a fish swims to the worm) → reel → show → stow (into the bucket)
@@ -112,8 +117,18 @@ const sfx = {
   woo: () => { tone(330, 0, .5, "sine", .14, 520); tone(520, .45, .8, "sine", .14, 300); tone(660, .45, .8, "triangle", .03, 380); },
   boo: () => { tone(260, 0, .18, "triangle", .12, 330); tone(330, .2, .9, "sine", .16, 200); },
   flap: () => { for (let i = 0; i < 6; i++) hiss(.06, 1600, "bandpass", .18, i * .09); tone(2400, .55, .08, "sine", .06, 3000); },
+  jingle: () => bells(),
   treat: () => { hiss(.3, 5000, "highpass", .08); [784, 988, 1175, 1568].forEach((f, i) => tone(f, .1 + i * .08, .25, "triangle", .1)); },
 };
+// Sleigh bells: little bright jingles, shaken over half a second or so.
+function bells(t0 = 0, n = 8) {
+  for (let i = 0; i < n; i++) {
+    const t = t0 + i * .07 + Math.random() * .03;
+    tone(2600 + Math.random() * 900, t, .12, "triangle", .05);
+    tone(3900 + Math.random() * 1200, t + .005, .09, "sine", .03);
+    hiss(.06, 7000, "highpass", .05, t);
+  }
+}
 // An original little sea-shanty jingle for a full bucket.
 function jingle() {
   const n = [[392, 0], [523, .16], [523, .32], [523, .48], [659, .64], [587, .8], [523, .96], [659, 1.2], [784, 1.44]];
@@ -152,7 +167,7 @@ resize();
 
 const want = () => clamp(Math.round(S.W * S.H / 150000), 4, 7);
 const here = () => ROUTE[place];
-const night = () => here().id === "night" || here().id === "spooky";
+const night = () => here().id === "night" || here().id === "spooky" || here().id === "xmas";
 function stock(inside) {
   while (fish.filter(f => f.state === "swim").length < want()) fish.push(spawn(S, here(), Math.random, fish.map(f => f.kind), inside));
 }
@@ -168,7 +183,8 @@ function splash(x, y) {
   parts.push({ k: "ring", x, y, r: 6, life: .7 });
 }
 function sparkle(x, y, n, spread = 1) {
-  const cols = halloween ? ["#ff8c1a", "#b77cff", "#9dff7a", "#ffd23f", "#ffffff"] : ["#ffd23f", "#ff6b9d", "#7ddc5a", "#4fc3ff", "#ffffff"];
+  const cols = halloween ? ["#ff8c1a", "#b77cff", "#9dff7a", "#ffd23f", "#ffffff"]
+    : christmas ? ["#ff3b3b", "#3fae4f", "#ffd23f", "#ffffff", "#4fc3ff"] : ["#ffd23f", "#ff6b9d", "#7ddc5a", "#4fc3ff", "#ffffff"];
   for (let i = 0; i < n; i++) {
     const a = Math.random() * TAU, v = (120 + Math.random() * 220) * spread;
     parts.push({ k: "star", x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 60, r: 5 + Math.random() * 6, rot: Math.random() * TAU, col: cols[i % cols.length], life: 1.2 });
@@ -315,6 +331,7 @@ function full() {
   setState("party");
   $("bucket").classList.add("party");
   jingle();
+  if (christmas) bells(.6);
   for (let i = 0; i < 4; i++) setTimeout(() => sparkle(S.W * (.2 + Math.random() * .6), S.H * (.3 + Math.random() * .3), 18), i * 350);
   say(`Your bucket is full! Let's sail to ${ROUTE[nextPlace(place, ROUTE)].name}!`);
 }
@@ -370,9 +387,9 @@ function draw() {
   if (state === "sail") {
     const e = ease(Math.min(1, (T - stateAt) / sailTime()));
     off = -e * S.W;
-    drawScene(c, S, ROUTE[sail.from].id, T, off, halloween);
-    drawScene(c, S, ROUTE[sail.to].id, T, off + S.W, halloween);
-  } else drawScene(c, S, here().id, T, 0, halloween);
+    drawScene(c, S, ROUTE[sail.from].id, T, off, halloween, christmas);
+    drawScene(c, S, ROUTE[sail.to].id, T, off + S.W, halloween, christmas);
+  } else drawScene(c, S, here().id, T, 0, halloween, christmas);
 
   const glow = night();
   for (const f of fish) {
@@ -381,7 +398,7 @@ function draw() {
   }
   if (state === "fish" && T - lastTap > 7) nudge();
 
-  tip = drawBoat(c, B, T, honk, halloween);
+  tip = drawBoat(c, B, T, honk, halloween, christmas);
   if (hook) {
     drawLine(c, S, tip, hook, T, !hook.fish || hook.fish.state !== "hooked");
     if (hook.fish?.state === "hooked") {
@@ -458,25 +475,29 @@ renderBucket();
 
 // ---------- title, buttons and the fish book ----------
 function renderTitle() {
-  const cols = halloween ? ["#ff8c1a", "#b77cff", "#9dff7a"] : ["#ff9a2e", "#ffd23f", "#4fc3ff", "#7ddc5a", "#ff6b9d"];
+  const cols = halloween ? ["#ff8c1a", "#b77cff", "#9dff7a"] : christmas ? ["#ff3b3b", "#3fae4f", "#ffd23f"] : ["#ff9a2e", "#ffd23f", "#4fc3ff", "#7ddc5a", "#ff6b9d"];
   $("title").innerHTML = [..."Funny Fish"].map((ch, i) =>
     ch === " " ? " " : `<span aria-hidden="true" style="color:${cols[i % cols.length]};--i:${i}">${ch}</span>`).join("");
 }
 renderTitle();
 
-// The grown-ups' Halloween switch, on the title screen only, so it never changes mid-game.
-$("spooky").addEventListener("click", e => {
-  e.stopPropagation();   // not a tap to start
-  spookyChoice = !halloween;
-  setHalloween(spookyChoice);
-  if (place >= ROUTE.length) {   // the spooky sea is gone: back to the pond
+// The grown-ups' Halloween and Christmas switches, on the title screen only, so they never change
+// mid-game. Turning one on turns the other off.
+function flip(which) {
+  const was = here().id;
+  if (which === "halloween") { spookyChoice = !halloween; if (spookyChoice && christmas) merryChoice = false; }
+  else { merryChoice = !christmas; if (merryChoice && halloween) spookyChoice = false; }
+  setSeasons();
+  if (place >= ROUTE.length || ROUTE[place].id !== was) {   // the spooky or Christmas sea is gone: back to the pond
     place = 0;
     document.body.dataset.place = here().id;
     fish = []; stock(true);
   }
   save();
   renderTitle();
-});
+}
+$("spooky").addEventListener("click", e => { e.stopPropagation(); flip("halloween"); });   // not a tap to start
+$("merry").addEventListener("click", e => { e.stopPropagation(); flip("christmas"); });
 
 let lock;
 async function wake() { try { lock = await navigator.wakeLock?.request("screen"); } catch {} }
@@ -491,7 +512,7 @@ function start() {
   wake();
   cv.focus({ preventScroll: true });
   const hello = place === 0 && !found(book) ? "Let's go fishing! Tap the water." : `Let's go fishing at ${here().name}!`;
-  say(halloween ? `Happy Halloween! ${hello}` : hello);
+  say(halloween ? `Happy Halloween! ${hello}` : christmas ? `Merry Christmas! ${hello}` : hello);
 }
 $("title-screen").addEventListener("click", start);
 
@@ -516,8 +537,9 @@ if (document.fullscreenEnabled) {
 function openBook() {
   const grid = $("book-pages");
   grid.replaceChildren();
-  // the spooky sea's page stays in the book after October, once something from it has been caught
-  const pages = halloween || !SPOOKY.creatures.some(k => book[k]) ? ROUTE : [...ROUTE, SPOOKY];
+  // the spooky and Christmas seas' pages stay in the book out of season, once something from them has been caught
+  const pages = [...ROUTE];
+  for (const p of [SPOOKY, MERRY]) if (!pages.includes(p) && p.creatures.some(k => book[k])) pages.push(p);
   const kinds = pages.flatMap(p => p.creatures);
   for (const p of pages) {
     const h = document.createElement("h3");

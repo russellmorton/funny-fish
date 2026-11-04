@@ -37,6 +37,11 @@ export const CREATURES = {
   ghost:     { name: "ghost", say: "A little ghost! Boo!", shape: "ghost", body: "#f6f3ff", sound: "boo", swim: "drift", slow: true, glows: true },
   batfish:   { name: "batfish", say: "A batfish! Flap flap!", shape: "fish", body: "#8a6cc9", fin: "#5e4398", extras: ["wings", "fangs"], sound: "flap" },
   candy:     { name: "candy bucket", say: "A trick-or-treat bucket full of sweets!", shape: "pail", body: "#ff9a2e", sound: "treat", swim: "bottom", slow: true, scale: .9 },
+
+  reindeer:  { name: "reindeer fish", say: "A reindeer fish with a shiny red nose!", shape: "fish", body: "#b07a4a", fin: "#7a4f26", extras: ["antlers", "rednose"], sound: "jingle" },
+  snowman:   { name: "snowman", say: "A snowman! Brrr! Hello, snowman!", shape: "snowman", body: "#ffffff", sound: "brrr", swim: "drift", slow: true },
+  elf:       { name: "elf fish", say: "An elf fish! It helps make the toys!", shape: "fish", body: "#7ddc5a", fin: "#3fae4f", extras: ["elfhat"], sound: "tada" },
+  present:   { name: "present", say: "A present! What's inside? A surprise!", shape: "present", body: "#e8473f", sound: "treat", swim: "bottom", slow: true, scale: .9 },
 };
 
 // The journey, in order. After the last place the boat sails back to the first.
@@ -49,7 +54,10 @@ export const PLACES = [
 ];
 // Only in October (or with ?halloween=1), the boat sails on from the night sea to the spooky sea.
 export const SPOOKY = { id: "spooky", name: "the spooky sea", creatures: ["pumpkin", "ghost", "batfish", "candy"] };
-export const journey = halloween => halloween ? [...PLACES, SPOOKY] : PLACES;
+// At Christmas (or with ?christmas=1), it sails on from the night sea to the Christmas sea instead.
+export const MERRY = { id: "xmas", name: "the Christmas sea", creatures: ["reindeer", "snowman", "elf", "present"] };
+export const journey = (halloween, christmas = false) =>
+  halloween ? [...PLACES, SPOOKY] : christmas ? [...PLACES, MERRY] : PLACES;
 export const nextPlace = (i, route = PLACES) => (i + 1) % route.length;
 
 // Halloween dress-up is on for all of October. The grown-ups' switch on the title screen (choice,
@@ -59,6 +67,27 @@ export function isHalloween(date = new Date(), search = "", choice = null) {
   if (ask === "1" || ask === "0") return ask === "1";
   if (typeof choice === "boolean") return choice;
   return date.getMonth() === 9;
+}
+
+// Christmas dress-up is on from 1 December to 6 January, with its own switch (choice) and
+// ?christmas=1 or ?christmas=0, in the same order.
+export function isChristmas(date = new Date(), search = "", choice = null) {
+  const ask = new URLSearchParams(search).get("christmas");
+  if (ask === "1" || ask === "0") return ask === "1";
+  if (typeof choice === "boolean") return choice;
+  return date.getMonth() === 11 || (date.getMonth() === 0 && date.getDate() <= 6);
+}
+
+// Halloween and Christmas are never on together. One that was asked for (in the address, or with
+// its switch) beats one that's only on because of the date; if both were asked for, Christmas wins.
+export function seasons(date = new Date(), search = "", choice = {}) {
+  let halloween = isHalloween(date, search, choice.halloween ?? null);
+  let christmas = isChristmas(date, search, choice.christmas ?? null);
+  if (halloween && christmas) {
+    const asked = key => new URLSearchParams(search).get(key) === "1" || choice[key] === true;
+    if (asked("christmas") || !asked("halloween")) halloween = false; else christmas = false;
+  }
+  return { halloween, christmas };
 }
 
 // The screen as the sea sees it: the waterline, how big a fish is, and the band fish swim in.

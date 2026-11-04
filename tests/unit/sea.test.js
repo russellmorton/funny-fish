@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   CREATURES, PLACES, PER_BUCKET, nextPlace, sea, sizeOf, boat, onBoat, pickKind, spawn, swim, hit, nearest,
-  lure, approach, refit, bookAdd, found, cleanBook, SPOOKY, journey, isHalloween,
+  lure, approach, refit, bookAdd, found, cleanBook, SPOOKY, MERRY, journey, isHalloween, isChristmas, seasons,
 } from "../../src/sea.js";
 
 // a repeatable stand-in for Math.random
@@ -11,7 +11,7 @@ const SCREENS = [[1280, 720], [412, 839], [915, 412], [768, 1024], [1920, 1080],
 
 test("every place has its own creatures, and every creature lives somewhere", () => {
   const seen = new Set();
-  for (const p of journey(true)) {
+  for (const p of [...journey(true), MERRY]) {
     assert.ok(p.creatures.length >= 3, p.id);
     for (const k of p.creatures) { assert.ok(k in CREATURES, k); assert.ok(!seen.has(k), `${k} is in two places`); seen.add(k); }
     assert.ok(p.creatures.some(k => !CREATURES[k].junk), `${p.id} has real fish`);
@@ -19,7 +19,7 @@ test("every place has its own creatures, and every creature lives somewhere", ()
   assert.deepEqual([...seen].sort(), Object.keys(CREATURES).sort());
   for (const [k, c] of Object.entries(CREATURES)) {
     assert.ok(c.name && c.say, k);
-    assert.ok(["fish", "puffer", "crab", "octopus", "star", "turtle", "frog", "duck", "boot", "sock", "penguin", "jelly", "ghost", "pail"].includes(c.shape), k);
+    assert.ok(["fish", "puffer", "crab", "octopus", "star", "turtle", "frog", "duck", "boot", "sock", "penguin", "jelly", "ghost", "pail", "snowman", "present"].includes(c.shape), k);
     if (c.shape === "fish") assert.ok(c.body && c.fin, k);
   }
 });
@@ -39,6 +39,33 @@ test("at Halloween the journey goes on from the night sea to the spooky sea and 
   assert.equal(route[nextPlace(PLACES.length - 1, route)], SPOOKY);
   assert.equal(nextPlace(route.length - 1, route), 0);
   assert.equal(journey(false), PLACES);
+});
+
+test("at Christmas the journey goes on from the night sea to the Christmas sea instead", () => {
+  const route = journey(false, true);
+  assert.deepEqual(route.map(p => p.id), [...PLACES.map(p => p.id), "xmas"]);
+  assert.equal(route[nextPlace(PLACES.length - 1, route)], MERRY);
+  assert.equal(nextPlace(route.length - 1, route), 0);
+});
+
+test("Christmas is 1 December to 6 January; the switch beats the date and the address beats both", () => {
+  for (const d of [new Date(2026, 11, 1), new Date(2026, 11, 25), new Date(2027, 0, 6, 23, 59)]) assert.equal(isChristmas(d), true, d);
+  for (const d of [new Date(2026, 10, 30), new Date(2027, 0, 7), new Date(2026, 9, 31)]) assert.equal(isChristmas(d), false, d);
+  assert.equal(isChristmas(new Date(2026, 4, 1), "", true), true);
+  assert.equal(isChristmas(new Date(2026, 11, 20), "", false), false);
+  assert.equal(isChristmas(new Date(2026, 4, 1), "?christmas=1", false), true);
+  assert.equal(isChristmas(new Date(2026, 11, 20), "?christmas=0", true), false);
+});
+
+test("Halloween and Christmas are never on together: the one asked for wins", () => {
+  const may = new Date(2026, 4, 1), oct = new Date(2026, 9, 20), dec = new Date(2026, 11, 20);
+  assert.deepEqual(seasons(oct), { halloween: true, christmas: false });
+  assert.deepEqual(seasons(dec), { halloween: false, christmas: true });
+  assert.deepEqual(seasons(may), { halloween: false, christmas: false });
+  assert.deepEqual(seasons(oct, "", { christmas: true }), { halloween: false, christmas: true });
+  assert.deepEqual(seasons(dec, "", { halloween: true }), { halloween: true, christmas: false });
+  assert.deepEqual(seasons(dec, "?halloween=1"), { halloween: true, christmas: false });
+  assert.deepEqual(seasons(may, "?halloween=1&christmas=1"), { halloween: false, christmas: true });
 });
 
 test("Halloween is all of October, and the address can switch it on or off", () => {
@@ -75,7 +102,7 @@ test("new fish swim in from the edge facing the screen, or start somewhere in th
   const r = rng(7);
   for (const [W, H] of SCREENS) {
     const S = sea(W, H);
-    for (const place of journey(true)) for (let i = 0; i < 40; i++) {
+    for (const place of [...journey(true), MERRY]) for (let i = 0; i < 40; i++) {
       const f = spawn(S, place, r);
       assert.ok(place.creatures.includes(f.kind));
       assert.ok(f.dir > 0 ? f.x < 0 : f.x > W, "starts off screen");

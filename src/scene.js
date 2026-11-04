@@ -1,5 +1,5 @@
 // Canvas drawing for the places on the journey, the boat and its captain, and the fishing line.
-import { INK, witchHat } from "./creatures.js";
+import { INK, witchHat, santaHat } from "./creatures.js";
 
 const TAU = Math.PI * 2, PI = Math.PI;
 
@@ -10,6 +10,7 @@ export const LOOKS = {
   ice:   { sky: ["#bfdcff", "#f3f8ff"], water: ["#4f9fc4", "#163f63"], floor: "#d8e6f2", weed: "#3c8a8a" },
   night: { sky: ["#141c45", "#3a3c8c"], water: ["#253b88", "#080f33"], floor: "#2a3163", weed: "#1f6b6b", dark: true },
   spooky: { sky: ["#2a1650", "#8c3f6e"], water: ["#4a2f7a", "#150b36"], floor: "#3d2f57", weed: "#3f7a4a", dark: true },
+  xmas:  { sky: ["#1d2a66", "#5b74c9"], water: ["#2f6fb8", "#0c2a66"], floor: "#eef6fb", weed: "#2f8a3e", dark: true },
 };
 
 export const wave = (x, t) => Math.sin(x * .02 + t * 1.6) * 3 + Math.sin(x * .045 - t * 2.1) * 2;
@@ -19,7 +20,8 @@ function circle(c, x, y, r) { c.beginPath(); c.arc(x, y, r, 0, TAU); }
 
 // One whole place, shifted sideways by off (for sailing from one place to the next). At
 // Halloween (spooky) bats fly over every place, the moon turns orange and a jack-o'-lantern floats by.
-export function drawScene(c, S, id, t, off = 0, spooky = false) {
+// At Christmas (xmas) snow falls over every place and a present floats by.
+export function drawScene(c, S, id, t, off = 0, spooky = false, xmas = false) {
   const L = LOOKS[id], { W, H, top } = S, u = S.s / 50;
   c.save();
   c.translate(off, 0);
@@ -33,6 +35,7 @@ export function drawScene(c, S, id, t, off = 0, spooky = false) {
   skyFace(c, S, t, L.dark, spooky);
   clouds(c, S, t, L.dark);
   if (spooky) bats(c, S, t);
+  if (xmas) snow(c, S, t);
   DECOR[id]?.above?.(c, S, t, u);
 
   g = c.createLinearGradient(0, top, 0, H);
@@ -57,6 +60,10 @@ export function drawScene(c, S, id, t, off = 0, spooky = false) {
   if (spooky && id !== "spooky") {
     const x = S.W * .16 + Math.sin(t * .4) * 10 * u;
     jack(c, x, S.top + wave(x, t) - 6 * u, 14 * u, Math.sin(t * 1.2) * .1, L.dark);
+  }
+  if (xmas && id !== "xmas") {
+    const x = S.W * .16 + Math.sin(t * .4) * 10 * u;
+    gift(c, x, S.top + wave(x, t) - 8 * u, 14 * u, Math.sin(t * 1.2) * .1);
   }
 
   const base = H - S.s * .45;
@@ -139,6 +146,43 @@ function bat(c, x, y, r, flap) {
   circle(c, 0, 0, r * .8); paint(c, "#5b3a8c");
   c.fillStyle = "#fff6b0";
   for (const s of [-1, 1]) { circle(c, s * r * .3, -r * .15, r * .17); c.fill(); }
+  c.restore();
+}
+
+// Snow falling through the sky, down to the water.
+function snow(c, S, t) {
+  c.save(); c.fillStyle = "#fff";
+  for (let i = 0; i < 40; i++) {
+    const r = 1.5 + rnd(i + 700) * 2.5, y = (rnd(i + 800) * S.top + t * (14 + r * 6)) % S.top;
+    c.globalAlpha = .6 + rnd(i + 900) * .4 * Math.min(1, (S.top - y) / 20);
+    circle(c, rnd(i + 750) * S.W + Math.sin(t + i) * 8, y, r); c.fill();
+  }
+  c.restore();
+}
+// A wrapped present with a bow, floating on the water.
+export function gift(c, x, y, r, tilt = 0, col = "#e8473f", ribbon = "#ffd23f") {
+  c.save(); c.translate(x, y); c.rotate(tilt);
+  c.beginPath(); c.rect(-r, -r * .8, r * 2, r * 1.6); paint(c, col);
+  c.fillStyle = ribbon; c.fillRect(-r * .2, -r * .8, r * .4, r * 1.6); c.strokeRect(-r * .2, -r * .8, r * .4, r * 1.6);
+  for (const s of [-1, 1]) { c.beginPath(); c.ellipse(s * r * .4, -r * 1.05, r * .45, r * .28, s * .45, 0, TAU); paint(c, ribbon); }
+  c.restore();
+}
+// A little Christmas tree with a star and fairy lights, standing on (x, y).
+export function tree(c, x, y, h, t = 0) {
+  c.save(); c.translate(x, y);
+  c.beginPath(); c.rect(-h * .08, -h * .14, h * .16, h * .14); paint(c, "#7a4f26");
+  for (const [w, b, tp] of [[.4, -.12, -.55], [.32, -.42, -.8], [.22, -.68, -1]]) {
+    c.beginPath(); c.moveTo(-w * h, b * h); c.lineTo(0, tp * h); c.lineTo(w * h, b * h); c.closePath(); paint(c, "#2f8a3e");
+  }
+  const cols = ["#ff3b3b", "#ffd23f", "#4fc3ff", "#ff5fa2"];
+  [[-.2, -.2], [.18, -.25], [-.08, -.5], [.12, -.6], [0, -.32], [-.05, -.78]].forEach(([bx, by], i) => {
+    c.globalAlpha = .7 + .3 * Math.sin(t * 4 + i * 2);
+    circle(c, bx * h, by * h, h * .045); c.fillStyle = cols[i % cols.length]; c.fill();
+  });
+  c.globalAlpha = 1;
+  c.beginPath();
+  for (let i = 0; i < 10; i++) { const rr = i % 2 ? h * .05 : h * .11, a = -PI / 2 + i * PI / 5; c.lineTo(Math.cos(a) * rr, -h + Math.sin(a) * rr); }
+  c.closePath(); paint(c, "#ffd23f");
   c.restore();
 }
 
@@ -316,10 +360,34 @@ const DECOR = {
   },
 };
 
+DECOR.xmas = {
+  above(c, S, t, u) {
+    const x = S.W * .86, y = S.top;
+    c.beginPath(); c.ellipse(x, y + 6, 66 * u, 22 * u, 0, PI, TAU); paint(c, "#fff");
+    tree(c, x + 14 * u, y - 10 * u, 100 * u, t);
+    gift(c, x - 34 * u, y - 14 * u, 11 * u, 0, "#4fc3ff", "#fff");
+    gift(c, x - 12 * u, y - 10 * u, 8 * u, .1, "#7ddc5a", "#ff3b3b");
+  },
+  surface(c, S, t, u) {
+    [[.24, "#e8473f", "#ffd23f"], [.68, "#b77cff", "#fff"]].forEach(([f, col, rib]) => {
+      const x = S.W * f + Math.sin(t * .5 + f * 9) * 8 * u;
+      gift(c, x, S.top + wave(x, t) - 8 * u, 13 * u, Math.sin(t * 1.3 + f * 5) * .12, col, rib);
+    });
+  },
+  below(c, S, t) {
+    for (let i = 0; i < 30; i++) {
+      c.globalAlpha = .35 + .35 * Math.sin(t * 1.5 + i * 3);
+      c.fillStyle = ["#ff5a5a", "#7ddc5a", "#ffd23f"][i % 3];
+      circle(c, rnd(i + 1000) * S.W, S.top + 20 + rnd(i + 1100) * (S.H - S.top - 40), 1.5 + rnd(i) * 2.5); c.fill();
+    }
+    c.globalAlpha = 1;
+  },
+};
+
 // ---------- the boat ----------
 // Draws the boat bobbing on the waterline, with the captain (a bear in a rain hat) holding the
 // rod. Returns where the rod tip is this frame, for the fishing line.
-export function drawBoat(c, B, t, honk = 0, spooky = false) {
+export function drawBoat(c, B, t, honk = 0, spooky = false, xmas = false) {
   const { x, y, k } = B, bob = Math.sin(t * 2) * 3 * k, tilt = Math.sin(t * 1.6) * .03;
   c.save();
   c.translate(x, y + bob); c.rotate(tilt); c.scale(k, k);
@@ -342,11 +410,14 @@ export function drawBoat(c, B, t, honk = 0, spooky = false) {
   for (const ex of [-20, 10]) { c.beginPath(); c.ellipse(ex, hy + 4, 4, 2.5, 0, 0, TAU); c.fill(); }
   if (spooky) {
     witchHat(c, -8, hy - 17, 1, Math.sin(t * 2.2) * 3);
+  } else if (xmas) {
+    santaHat(c, -8, hy - 16, 1.15, Math.sin(t * 2.2) * 3);
   } else {
     c.beginPath(); c.ellipse(-8, hy - 16, 20, 15, 0, PI, TAU); c.closePath(); paint(c, "#ffd23f");
     c.beginPath(); c.ellipse(-8, hy - 16, 31, 7, 0, 0, TAU); paint(c, "#ffd23f");
   }
   if (spooky) { c.lineWidth = 3; jack(c, 56, -32, 13, 0, true); c.lineWidth = 4; }
+  if (xmas) { c.lineWidth = 3; tree(c, 54, -12, 44, t); c.lineWidth = 4; }
 
   // hull
   c.beginPath(); c.moveTo(-80, -14); c.lineTo(80, -14); c.lineTo(62, 18); c.quadraticCurveTo(0, 26, -62, 18); c.closePath(); paint(c, "#e8473f");

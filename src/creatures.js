@@ -8,7 +8,8 @@ const TAU = Math.PI * 2, PI = Math.PI;
 // o: dir (1 faces right, -1 left), t (seconds, for wiggles), wig (how much it wiggles),
 // tilt (radians), puff (pufferfish, 0..1), spin (starfish), glow (night sea), show (being shown off).
 export function drawCreature(c, kind, x, y, size, o = {}) {
-  const k = CREATURES[kind], dress = dressedUp && COSTUMES[kind], t = o.t || 0, wig = o.wig ?? 1;
+  const k = CREATURES[kind], t = o.t || 0, wig = o.wig ?? 1;
+  const dress = dressedUp === "halloween" ? COSTUMES[kind] : null, xmas = dressedUp === "christmas" ? CHRISTMAS[kind] : null;
   c.save();
   c.translate(x, y);
   c.scale((o.dir || 1) * size / 50, size / 50);
@@ -18,6 +19,9 @@ export function drawCreature(c, kind, x, y, size, o = {}) {
   SHAPES[k.shape](c, k, t, wig, o);
   if (dress?.fangs) fangs(c, dress.fangs);
   if (dress?.hat) { const [x, y, s] = dress.hat; witchHat(c, x, typeof y === "function" ? y(o) : y, s, Math.sin(t * 2.2) * 3); }
+  if (xmas?.lights) fairyLights(c, xmas.lights, t);
+  if (xmas?.antlers) antlers(c, ...xmas.antlers);
+  if (xmas?.hat) { const [x, y, s] = xmas.hat; santaHat(c, x, typeof y === "function" ? y(o) : y, s, Math.sin(t * 2.2) * 3); }
   if (k.junk && o.show) stink(c, t);
   c.restore();
 }
@@ -25,8 +29,8 @@ export function drawCreature(c, kind, x, y, size, o = {}) {
 // ---------- Halloween costumes ----------
 // In October everyone from the everyday places dresses up as a witch, a bat or a vampire. Each
 // costume sits where that creature's head, back or mouth is, in its 100-unit box facing right.
-let dressedUp = false;
-export function dressUp(on) { dressedUp = on; }
+let dressedUp = null;   // "halloween", "christmas" or null
+export function dressUp(season) { dressedUp = season || null; }
 const FISH_WINGS = [[2, -20, -1, .8], [-6, -20, 1, 1]], FISH_FANGS = [[26.5, 11.7], [32.5, 10.4]];
 export const COSTUMES = {
   goldfish: { wings: FISH_WINGS }, catfish: { fangs: FISH_FANGS }, frog: { fangs: [[-6, 17.5], [6, 17.5]] }, duck: { hat: [18, -33, .75] },
@@ -36,6 +40,57 @@ export const COSTUMES = {
   woolly: { fangs: FISH_FANGS }, narwhal: { wings: FISH_WINGS }, penguin: { hat: [2, -35, .8] }, sock: { wings: [[-6, -28, -1, .7], [-14, -22, 1, .9]] },
   jelly: { hat: [0, -31, .85] }, angler: { wings: FISH_WINGS }, kingfish: { wings: FISH_WINGS }, sleepy: { wings: FISH_WINGS },
 };
+
+// ---------- Christmas costumes ----------
+// At Christmas everyone from the everyday places wears a Santa hat, reindeer antlers, or a string
+// of fairy lights (for the ones whose heads are already busy with a crown, a bow or a lamp).
+// lights: a curve [x0, y0, cx, cy, x1, y1] the string droops along.
+const FISH_LIGHTS = [-36, -14, -14, 30, 30, 10], FISH_ANTLERS = [20, -24, 1];
+export const CHRISTMAS = {
+  goldfish: { antlers: FISH_ANTLERS }, catfish: { lights: FISH_LIGHTS }, frog: { hat: [14, -29, .55] }, duck: { hat: [18, -33, .9] },
+  coolfish: { antlers: FISH_ANTLERS }, puffer: { hat: [2, o => 4 - (28 + (o.puff || 0) * 16), 1] }, crab: { hat: [0, -20, .75] },
+  boot: { hat: [-7, -47, .9] },
+  clownfish: { lights: FISH_LIGHTS }, octopus: { lights: [-30, -12, 0, 16, 30, -12] }, starfish: { hat: [0, -38, .8] }, turtle: { hat: [39, -16, .6] },
+  woolly: { lights: FISH_LIGHTS }, narwhal: { antlers: FISH_ANTLERS }, penguin: { hat: [2, -34, .9] }, sock: { hat: [-3, -49, .8] },
+  jelly: { hat: [0, -30, 1] }, angler: { lights: FISH_LIGHTS }, kingfish: { lights: FISH_LIGHTS }, sleepy: { lights: FISH_LIGHTS },
+};
+
+// A Santa hat, its fluffy brim centred on (x, y), the tip flopping back with a bobble on the end.
+// The captain wears one too, and an elf's hat is the same in green.
+export function santaHat(c, x, y, s = 1, flop = 0, hat = "#e8473f", trim = "#fff", bobble = "#fff") {
+  c.save(); c.translate(x, y); c.scale(s, s);
+  c.lineWidth = 4 / Math.max(s, .6); c.strokeStyle = INK; c.lineJoin = "round";
+  const tx = -30 + flop, ty = -26;
+  c.beginPath(); c.moveTo(-18, -2); c.quadraticCurveTo(-8, -50, 12, -42); c.quadraticCurveTo(-8, -40, tx, ty);
+  c.quadraticCurveTo(-4, -30, 18, -2); c.closePath(); paint(c, hat);
+  box(c, -22, -8, 44, 13, 6); paint(c, trim);
+  circle(c, tx, ty, 7); paint(c, bobble);
+  c.restore();
+}
+function antlers(c, x, y, s = 1) {
+  c.save(); c.translate(x, y); c.scale(s, s);
+  for (const d of [-1, 1]) {
+    c.save(); c.translate(d * 7, 0); c.rotate(d * .25);
+    c.beginPath(); c.moveTo(0, 0); c.lineTo(0, -26); c.moveTo(0, -12); c.lineTo(d * 9, -20); c.moveTo(0, -20); c.lineTo(-d * 7, -28);
+    limb(c, "#a8743f", 5);
+    c.restore();
+  }
+  c.restore();
+}
+function fairyLights(c, [x0, y0, cx, cy, x1, y1], t) {
+  c.save();
+  c.lineWidth = 2.5; c.strokeStyle = "#2f6b3a";
+  c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo(cx, cy, x1, y1); c.stroke();
+  const cols = ["#ff3b3b", "#ffd23f", "#4fc3ff", "#7ddc5a", "#ff5fa2"];
+  c.lineWidth = 2; c.strokeStyle = INK;
+  for (let i = 0; i < 5; i++) {
+    const p = .1 + i * .2, q = 1 - p;
+    const x = q * q * x0 + 2 * q * p * cx + p * p * x1, y = q * q * y0 + 2 * q * p * cy + p * p * y1;
+    c.globalAlpha = .75 + .25 * Math.sin(t * 4 + i * 2);
+    oval(c, x, y + 4, 3.5, 5); paint(c, cols[i]);
+  }
+  c.restore();
+}
 
 // A witch's hat with a floppy tip, its brim centred on (x, y). The captain wears one too.
 export function witchHat(c, x, y, s = 1, flop = 0) {
@@ -207,6 +262,14 @@ const EXTRA = {
     paint(c, "#ffcf26");
     circle(c, 2, -30, 3.5); paint(c, "#ff3b6b");
   },
+  antlers(c) { antlers(c, ...FISH_ANTLERS); },
+  rednose(c, k, t) {
+    c.save(); c.shadowColor = "#ff3b3b"; c.shadowBlur = 8 + Math.sin(t * 4) * 4;
+    circle(c, 42, 2, 7); paint(c, "#ff3b3b");
+    c.restore();
+    circle(c, 44, -1, 2.2); c.fillStyle = "#fff"; c.fill();
+  },
+  elfhat(c, k, t) { santaHat(c, 18, -24, .9, Math.sin(t * 2.2) * 3, "#3fae4f", "#e8473f", "#ffd23f"); },
   moustache(c) {
     c.fillStyle = "#5b3a1f";
     for (const s of [-1, 1]) {
@@ -456,7 +519,44 @@ function pail(c, k) {
   cheek(c, -24, 8, 5); cheek(c, 24, 8, 5);
 }
 
-const SHAPES = { fish, puffer, crab, octopus, star, turtle, frog, duck, boot, sock, penguin, jelly, ghost, pail };
+// A snowman with a carrot nose and a scarf, waving its twiggy arms.
+function snowman(c, k, t, wig) {
+  const wave = Math.sin(t * 4) * .35 * wig;
+  for (const [x, a] of [[-18, -2.4 - wave], [18, -.7 + wave]]) {
+    c.save(); c.translate(x, 2); c.rotate(a);
+    c.beginPath(); c.moveTo(0, 0); c.lineTo(22, 0); c.moveTo(14, 0); c.lineTo(20, -7); limb(c, "#7a4f26", 4);
+    c.restore();
+  }
+  circle(c, 0, 16, 26); paint(c, k.body);
+  circle(c, 2, -22, 18); paint(c, k.body);
+  c.fillStyle = INK;
+  for (const y of [6, 18, 30]) { circle(c, 0, y, 3); c.fill(); }
+  eye(c, -4, -27, 6, t); eye(c, 10, -27, 6, t);
+  c.beginPath(); c.moveTo(10, -20); c.lineTo(32, -16); c.lineTo(10, -14); c.closePath(); paint(c, "#ff8a1f");
+  smile(c, 3, -15, 7, .2, .7);
+  box(c, -16, -9, 36, 9, 4); paint(c, "#e8473f");
+  box(c, -12, -4, 9, 20, 3); paint(c, "#e8473f");
+  box(c, -14, -50, 30, 12, 3); paint(c, INK); oval(c, 1, -38, 22, 4); paint(c, INK);
+  cheek(c, -10, -18, 4); cheek(c, 16, -18, 4);
+}
+
+// A wrapped present with a big bow and a happy face. The lid jiggles as if something's inside.
+function present(c, k, t, wig) {
+  const jig = Math.max(0, Math.sin(t * 5)) * 4 * wig;
+  box(c, -30, -14, 60, 46, 6); paint(c, k.body);
+  c.fillStyle = "#ffd23f"; c.fillRect(-6, -14, 12, 46); c.strokeRect(-6, -14, 12, 46);
+  c.save(); c.translate(0, -jig);
+  box(c, -34, -26, 68, 14, 5); paint(c, k.body);
+  c.fillStyle = "#ffd23f"; c.fillRect(-6, -26, 12, 14); c.strokeRect(-6, -26, 12, 14);
+  for (const s of [-1, 1]) { oval(c, s * 12, -34, 13, 8, s * .45); paint(c, "#ffd23f"); }
+  circle(c, 0, -30, 6); paint(c, "#ffd23f");
+  c.restore();
+  eye(c, -17, 6, 7, t); eye(c, 17, 6, 7, t + 1);
+  smile(c, 0, 16, 7, .1, .9);
+  cheek(c, -20, 20, 4); cheek(c, 20, 20, 4);
+}
+
+const SHAPES = { fish, puffer, crab, octopus, star, turtle, frog, duck, boot, sock, penguin, jelly, ghost, pail, snowman, present };
 
 // Paints a creature into a small <canvas>: for the bucket and the fish book. Not caught yet
 // shows as a silhouette.

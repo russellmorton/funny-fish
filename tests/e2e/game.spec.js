@@ -1,13 +1,13 @@
 import { test, expect } from "@playwright/test";
-import { sea, boat, PLACES, CREATURES, SPOOKY } from "../../src/sea.js";
+import { sea, boat, PLACES, CREATURES, SPOOKY, MERRY } from "../../src/sea.js";
 
-// The everyday game. Halloween (all of October) is switched off here so the tests don't depend
-// on the date, and has its own tests at the end.
+// The everyday game. Halloween (all of October) and Christmas (December) are switched off here so
+// the tests don't depend on the date, and have their own tests at the end.
 let errors;
 test.beforeEach(async ({ page }) => {
   errors = [];
   page.on("pageerror", e => errors.push(e.message));
-  await page.goto("/?halloween=0");
+  await page.goto("/?halloween=0&christmas=0");
 });
 test.afterEach(() => expect(errors).toEqual([]));
 
@@ -144,7 +144,7 @@ test.describe("at Halloween", () => {
       const saved = JSON.parse(localStorage.getItem("funny-fish")) || {};
       localStorage.setItem("funny-fish", JSON.stringify({ ...saved, place }));
     }, place);
-    await page.goto(`/?halloween=${halloween}`);
+    await page.goto(`/?halloween=${halloween}&christmas=0`);
   }
 
   test("the title says Happy Halloween, and so does the game", async ({ page }) => {
@@ -205,9 +205,75 @@ test.describe("at Halloween", () => {
   });
 
   test("the fish book leaves out the spooky sea after October until something from it is caught", async ({ page }) => {
-    await page.goto("/?halloween=0");
+    await page.goto("/?halloween=0&christmas=0");
     await page.getByRole("button", { name: "Fish book" }).click();
     await expect(page.locator(".sticker")).toHaveCount(PLACES.length * 4);
     await expect(page.getByRole("heading", { name: "The spooky sea" })).toHaveCount(0);
+  });
+});
+
+test.describe("at Christmas", () => {
+  async function at(page, place, christmas = 1) {
+    await page.evaluate(place => {
+      const saved = JSON.parse(localStorage.getItem("funny-fish")) || {};
+      localStorage.setItem("funny-fish", JSON.stringify({ ...saved, place }));
+    }, place);
+    await page.goto(`/?christmas=${christmas}&halloween=0`);
+  }
+
+  test("the title says Merry Christmas, and so does the game", async ({ page }) => {
+    await page.goto("/?christmas=1");
+    await expect(page.locator(".title .tag-xmas")).toHaveText("Merry Christmas!");
+    await expect(page.locator(".title .tag-xmas")).toBeVisible();
+    await expect(page.locator(".title .tag")).toBeHidden();
+    await play(page);
+    await expect(page.locator("#caption")).toHaveText("Merry Christmas! Let's go fishing! Tap the water.");
+  });
+
+  test("the night sea sails on to the Christmas sea, where the Christmas creatures live", async ({ page }) => {
+    test.setTimeout(120_000);
+    await at(page, PLACES.length - 1);
+    await play(page);
+    for (let i = 0; i < 5; i++) await catchOne(page, .2 + i * .15, .3 + (i % 3) * .25);
+    await expect(page.locator("#caption")).toHaveText("Your bucket is full! Let's sail to the Christmas sea!");
+    await expect.poll(() => state(page), { timeout: 14000 }).toBe("fish");
+    await expect(page.locator("body")).toHaveAttribute("data-place", "xmas");
+    await catchOne(page);
+    expect(MERRY.creatures).toContain(await caught(page).first().getAttribute("data-kind"));
+
+    // after Christmas the boat is back at the pond, and the Christmas page stays in the fish book
+    await at(page, PLACES.length, 0);
+    await expect(page.locator("body")).toHaveAttribute("data-place", "pond");
+    await page.getByRole("button", { name: "Fish book" }).click();
+    await expect(page.getByRole("heading", { name: "The Christmas sea" })).toBeVisible();
+  });
+
+  test("the Christmas switch turns it on and off, is remembered, and turns Halloween off", async ({ page }) => {
+    await page.clock.setFixedTime(new Date(2026, 9, 20, 10, 0));   // October: Halloween by the date
+    await page.goto("/");
+    const merry = page.getByRole("button", { name: "Christmas" }), spooky = page.getByRole("button", { name: "Halloween" });
+    await expect(merry).toHaveAttribute("aria-pressed", "false");
+    await expect(spooky).toHaveAttribute("aria-pressed", "true");
+
+    await merry.click();
+    await expect(merry).toHaveAttribute("aria-pressed", "true");
+    await expect(spooky).toHaveAttribute("aria-pressed", "false");
+    await expect(page.locator(".title .tag-xmas")).toBeVisible();
+    await expect.poll(() => state(page)).toBe("title");   // the switch isn't a tap to start
+    await page.reload();
+    await expect(page.getByRole("button", { name: "Christmas" })).toHaveAttribute("aria-pressed", "true");
+
+    // and Halloween back on turns Christmas off
+    await page.getByRole("button", { name: "Halloween" }).click();
+    await expect(page.getByRole("button", { name: "Christmas" })).toHaveAttribute("aria-pressed", "false");
+    await play(page);
+    await expect(page.locator("#caption")).toHaveText("Happy Halloween! Let's go fishing! Tap the water.");
+  });
+
+  test("it comes by itself in December", async ({ page }) => {
+    await page.clock.setFixedTime(new Date(2026, 11, 12, 10, 0));
+    await page.goto("/");
+    await expect(page.getByRole("button", { name: "Christmas" })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("body")).toHaveAttribute("data-christmas", "");
   });
 });

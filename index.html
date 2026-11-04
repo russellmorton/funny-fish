@@ -87,10 +87,16 @@ button:focus-visible { outline: 4px solid var(--ink); outline-offset: 3px; }
   box-shadow: 0 8px 0 rgba(29,43,79,.35); display: grid; place-items: center; padding: 0; animation: pulse 1.6s ease-in-out infinite;
 }
 .play svg { width: 52%; height: 52%; margin-left: 8%; }
-.title .tag { display: none; margin: -1vh 0 0; font-size: clamp(1.4rem, 5vw, 2.4rem); font-weight: 800; color: #ff8c1a; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; }
+.title .tag, .title .tag-xmas { display: none; margin: -1vh 0 0; font-size: clamp(1.4rem, 5vw, 2.4rem); font-weight: 800; color: #ff8c1a; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; }
 /* Halloween (October): see isHalloween in src/sea.js */
 body[data-halloween] .title .tag { display: block; }
 body[data-halloween] .play { background: #ff8c1a; }
+/* Christmas (1 December to 6 January): see isChristmas in src/sea.js */
+.title .tag-xmas { color: #e8473f; }
+body[data-christmas] .title .tag-xmas { display: block; }
+body[data-christmas] .play { background: #e8473f; }
+.switches { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 10px; padding-inline: 16px; }
+.spooky-switch[aria-pressed="true"]#merry .knob { background: #3fae4f; }
 .spooky-switch {
   display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 4px 16px 4px 8px; margin-top: 1vh;
   border: 3px solid var(--ink); border-radius: 999px; background: rgba(255,255,255,.9); font-weight: 800; font-size: 1.1rem;
@@ -166,13 +172,20 @@ body[data-halloween] .play { background: #ff8c1a; }
 <div class="title" id="title-screen">
   <h1 id="title" aria-label="Funny Fish"></h1>
   <p class="tag">Happy Halloween!</p>
+  <p class="tag-xmas">Merry Christmas!</p>
   <button class="play" id="play" aria-label="Play">
     <svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z" fill="#1d2b4f" stroke="#1d2b4f" stroke-width="2" stroke-linejoin="round"/></svg>
   </button>
+  <div class="switches">
   <button class="spooky-switch" id="spooky" type="button" aria-pressed="false">
     <svg viewBox="0 0 32 32" aria-hidden="true" stroke="#1d2b4f" stroke-width="2" stroke-linejoin="round"><path d="M15 8l-1-5 4 0-1 5z" fill="#6d8f2e"/><ellipse cx="11" cy="18" rx="8" ry="10" fill="#ff8c1a"/><ellipse cx="21" cy="18" rx="8" ry="10" fill="#ff8c1a"/><ellipse cx="16" cy="18" rx="6" ry="10.5" fill="#ffa040"/><path d="M10 16h4l-2-3zM18 16h4l-2-3zM10 21q6 5 12 0q-6 2-12 0z" fill="#1d2b4f" stroke-width="1"/></svg>
     Halloween <span class="knob" aria-hidden="true"></span>
   </button>
+  <button class="spooky-switch" id="merry" type="button" aria-pressed="false">
+    <svg viewBox="0 0 32 32" aria-hidden="true" stroke="#1d2b4f" stroke-width="2" stroke-linejoin="round"><path d="M14 25h4v5h-4z" fill="#7a4f26"/><path d="M16 4l-8 10h4l-6 8h5l-5 6h20l-5-6h5l-6-8h4z" fill="#3fae4f"/><circle cx="13" cy="17" r="1.6" fill="#ff3b3b" stroke="none"/><circle cx="19" cy="21" r="1.6" fill="#ffd23f" stroke="none"/><circle cx="17" cy="12" r="1.6" fill="#4fc3ff" stroke="none"/><path d="M16 1.5l1.2 2.6 2.8.3-2.1 1.9.6 2.8-2.5-1.4-2.5 1.4.6-2.8-2.1-1.9 2.8-.3z" fill="#ffd23f" stroke-width="1"/></svg>
+    Christmas <span class="knob" aria-hidden="true"></span>
+  </button>
+  </div>
 </div>
 
 <div class="book" id="book" role="dialog" aria-modal="true" aria-labelledby="book-title" hidden>

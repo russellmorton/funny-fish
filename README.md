@@ -18,6 +18,8 @@ After the night sea the boat sails back to the pond.
 
 **At Halloween** (all of October) every creature dresses up as a witch, a bat or a vampire, the captain wears a witch's hat, bats flap across the sky, the moon turns orange and a jack-o'-lantern floats in every place. After the night sea the boat sails on to a sixth place, **the spooky sea**, with a pumpkin fish, a little ghost, a batfish and a trick-or-treat bucket full of sweets. Grown-ups can turn it on or off on any day with the **Halloween** switch on the title screen, which is remembered. `?halloween=1` or `?halloween=0` in the address overrides both. Creatures caught there stay in the fish book after October.
 
+**At Christmas** (1 December to 6 January) everyone wears a Santa hat, reindeer antlers or a string of twinkly fairy lights, the captain wears a Santa hat with a little Christmas tree on deck, snow falls and presents float by in every place. After the night sea the boat sails on to **the Christmas sea**, with a reindeer fish with a shiny red nose, a snowman, an elf fish and a present, and sleigh bells ring when the bucket is full. It has its own **Christmas** switch next to the Halloween one (turning one on turns the other off), and `?christmas=1` or `?christmas=0` in the address. Creatures caught there stay in the fish book after Christmas.
+
 Made for little hands:
 
 - There is no losing and no timer, and nothing to read. Tapping right on a fish catches that fish. Tapping anywhere else in the water still catches the nearest one.
