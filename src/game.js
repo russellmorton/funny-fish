@@ -514,6 +514,7 @@ function start() {
   const hello = place === 0 && !found(book) ? "Let's go fishing! Tap the water." : `Let's go fishing at ${here().name}!`;
   say(halloween ? `Happy Halloween! ${hello}` : christmas ? `Merry Christmas! ${hello}` : hello);
 }
+$("toybox").addEventListener("click", e => e.stopPropagation());   // follow the link, don't start
 $("title-screen").addEventListener("click", start);
 
 function setMuted(m) {

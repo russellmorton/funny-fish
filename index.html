@@ -144,6 +144,11 @@ body[data-christmas] .play { background: #e8473f; }
 @media (prefers-reduced-motion: reduce) {
   .title h1 span, .play, .bucket li, .sticker { animation: none !important; }
 }
+/* Back to Toy Box */
+.toybox-link { display: inline-flex; align-items: center; gap: 8px; padding: 5px 16px 5px 10px; background: #fff; color: #1d2b4f; border: 3px solid #1d2b4f; border-radius: 999px; box-shadow: 0 4px 0 #1d2b4f; font: inherit; font-weight: 800; font-size: 1.05rem; line-height: 1.2; text-decoration: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.toybox-link svg { width: 26px; height: 26px; flex: none; }
+.toybox-link:active { transform: translateY(3px); box-shadow: 0 1px 0 #1d2b4f; }
+.toybox-link:focus-visible { outline: 4px solid #2e8ae6; outline-offset: 3px; }
 </style>
 </head>
 <body>
@@ -186,6 +191,7 @@ body[data-christmas] .play { background: #e8473f; }
     Christmas <span class="knob" aria-hidden="true"></span>
   </button>
   </div>
+  <a class="toybox-link" id="toybox" href="https://toybox-games.vercel.app" aria-label="Back to Toy Box"><svg viewBox="0 0 32 32" aria-hidden="true"><g stroke="#1d2b4f" stroke-width="2.2" stroke-linejoin="round"><path d="M4 13h24v15H4z" fill="#ff5a6e"/><path d="M3 8h26v5H3z" fill="#2e8ae6"/></g><circle cx="16" cy="20" r="3" fill="#ffd93b" stroke="#1d2b4f" stroke-width="1.8"/></svg>Toy Box</a>
 </div>
 
 <div class="book" id="book" role="dialog" aria-modal="true" aria-labelledby="book-title" hidden>
